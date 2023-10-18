@@ -2,18 +2,19 @@
 import { ref } from "vue";
 import { fetchy } from "../../utils/fetchy";
 
+const props = defineProps(["target"]);
 const content = ref("");
-const emit = defineEmits(["refreshPosts"]);
+const emit = defineEmits(["refreshComments"]);
 
-const createPost = async (text: string) => {
+const createComment = async (content: string, target: string) => {
   try {
-    await fetchy("/api/posts", "POST", {
-      body: { text },
+    await fetchy("/api/comments", "POST", {
+      body: { content, target },
     });
   } catch (_) {
     return;
   }
-  emit("refreshPosts");
+  emit("refreshComments");
   emptyForm();
 };
 
@@ -23,10 +24,10 @@ const emptyForm = () => {
 </script>
 
 <template>
-  <form @submit.prevent="createPost(content)">
-    <label for="content">Post Contents:</label>
-    <textarea id="content" v-model="content" placeholder="Create a post!" required> </textarea>
-    <button type="submit" class="pure-button-primary pure-button">Create Post</button>
+  <form @submit.prevent="createComment(content, props.target)">
+    <label for="content">Comment Contents:</label>
+    <textarea id="content" v-model="content" placeholder="Create a comment!" required> </textarea>
+    <button type="submit" class="pure-button-primary pure-button">Create Comment</button>
   </form>
 </template>
 

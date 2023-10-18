@@ -1,4 +1,6 @@
 import { User } from "./app";
+import { CommentDoc } from "./concepts/comment";
+import { EventDoc } from "./concepts/event";
 import { AlreadyFriendsError, FriendNotFoundError, FriendRequestAlreadyExistsError, FriendRequestDoc, FriendRequestNotFoundError } from "./concepts/friend";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/post";
 import { Router } from "./framework/router";
@@ -36,6 +38,46 @@ export default class Responses {
     const to = requests.map((request) => request.to);
     const usernames = await User.idsToUsernames(from.concat(to));
     return requests.map((request, i) => ({ ...request, from: usernames[i], to: usernames[i + requests.length] }));
+  }
+
+  /**
+   * Convert EventDoc into more readable format for the frontend
+   * by converting the owner id into a username
+   */
+  static async event(event: EventDoc | null) {
+    if (!event) {
+      return event;
+    }
+    const owner = await User.getUserById(event.owner);
+    return { ...event, owner: owner.username };
+  }
+
+  /**
+   * Same as {@link event} but for an array of EventDoc for improved performance.
+   */
+  static async events(events: EventDoc[]) {
+    const owners = await User.idsToUsernames(events.map((event) => event.owner));
+    return events.map((event, i) => ({ ...event, owner: owners[i] }));
+  }
+
+  /**
+   * Convert CommentDoc into more readable format for the frontend
+   * by converting the author id into a username
+   */
+  static async comment(comment: CommentDoc | null) {
+    if (!comment) {
+      return comment;
+    }
+    const author = await User.getUserById(comment.author);
+    return { ...comment, author: author.username };
+  }
+
+  /**
+   * Same as {@link comment} but for an array of EventDoc for improved performance.
+   */
+  static async comments(comments: CommentDoc[]) {
+    const owners = await User.idsToUsernames(comments.map((comment) => comment.author));
+    return comments.map((comment, i) => ({ ...comment, author: owners[i] }));
   }
 }
 

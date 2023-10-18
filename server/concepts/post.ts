@@ -5,19 +5,21 @@ import { NotAllowedError, NotFoundError } from "./errors";
 
 export interface PostOptions {
   backgroundColor?: string;
+  location?: [number, number];
+  media?: Array<Blob>;
 }
 
 export interface PostDoc extends BaseDoc {
   author: ObjectId;
-  content: string;
+  text: string;
   options?: PostOptions;
 }
 
 export default class PostConcept {
   public readonly posts = new DocCollection<PostDoc>("posts");
 
-  async create(author: ObjectId, content: string, options?: PostOptions) {
-    const _id = await this.posts.createOne({ author, content, options });
+  async create(author: ObjectId, text: string, options?: PostOptions) {
+    const _id = await this.posts.createOne({ author, text, options });
     return { msg: "Post successfully created!", post: await this.posts.readOne({ _id }) };
   }
 
