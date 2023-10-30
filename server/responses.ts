@@ -3,6 +3,7 @@ import { CommentDoc } from "./concepts/comment";
 import { EventDoc } from "./concepts/event";
 import { AlreadyFriendsError, FriendNotFoundError, FriendRequestAlreadyExistsError, FriendRequestDoc, FriendRequestNotFoundError } from "./concepts/friend";
 import { PostAuthorNotMatchError, PostDoc } from "./concepts/post";
+import { TrailDoc } from "./concepts/trail";
 import { Router } from "./framework/router";
 
 /**
@@ -78,6 +79,25 @@ export default class Responses {
   static async comments(comments: CommentDoc[]) {
     const owners = await User.idsToUsernames(comments.map((comment) => comment.author));
     return comments.map((comment, i) => ({ ...comment, author: owners[i] }));
+  }
+  /**
+   * Convert TrailDoc into more readable format for the frontend
+   * by converting the author id into a username
+   */
+  static async trail(trail: TrailDoc | null) {
+    if (!trail) {
+      return trail;
+    }
+    const author = await User.getUserById(trail.author);
+    return { ...trail, author: author.username };
+  }
+
+  /**
+   * Same as {@link comment} but for an array of EventDoc for improved performance.
+   */
+  static async trails(trails: TrailDoc[]) {
+    const owners = await User.idsToUsernames(trails.map((trail) => trail.author));
+    return trails.map((trail, i) => ({ ...trail, author: owners[i] }));
   }
 }
 

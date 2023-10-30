@@ -30,3 +30,8 @@ a.button {
   align-items: center;
   gap: 1em;
 }
+
+#app-container {
+  min-height: 100vh;
+}
+

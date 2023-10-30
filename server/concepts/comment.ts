@@ -1,6 +1,6 @@
 import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { NotAllowedError, NotFoundError } from "./errors";
+import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 
 export interface CommentDoc extends BaseDoc {
   author: ObjectId;
@@ -13,21 +13,31 @@ export default class CommentConcept {
 
   /** add new comment */
   async create(author: ObjectId, content: string, target: ObjectId) {
+    if (!content) {
+      throw new CommentContentEmptyError();
+    }
+
+    if (!target) {
+      throw new CommentNoTargetError();
+    }
+
+    target = new ObjectId(target.toString());
+
     const _id = await this.comments.createOne({ author, content, target });
     return { msg: "Comment successfully created!", comment: await this.comments.readOne({ _id }) };
   }
 
   /** get comments that match filter */
   async getComments(query: Filter<CommentDoc>) {
-    console.log("qyer", query);
     const events = await this.comments.readMany(query, {
-      sort: { dateUpdated: -1 },
+      sort: { dateCreated: 1 },
     });
     return events;
   }
 
   /** get comments by target */
-  async getByOwner(target: ObjectId) {
+  async getByPost(target: ObjectId) {
+    target = new ObjectId(target.toString());
     return await this.getComments({ target });
   }
 
@@ -45,11 +55,18 @@ export default class CommentConcept {
   }
 
   private sanitizeUpdate(update: Partial<CommentDoc>) {
+    if (!update) {
+      throw new CommentUpdateEmptyError();
+    }
     // Make sure the update cannot change the author or target.
     const allowedUpdates = ["content"];
-    for (const key in update) {
+    for (const [key, value] of Object.entries(update)) {
       if (!allowedUpdates.includes(key)) {
         throw new NotAllowedError(`Cannot update '${key}' field!`);
+      }
+
+      if (key === "content" && !value) {
+        throw new CommentContentEmptyError();
       }
     }
   }
@@ -72,5 +89,23 @@ export class CommentAuthorNotMatchError extends NotAllowedError {
     public readonly _id: ObjectId,
   ) {
     super("{0} is not the author of comment {1}!", user, _id);
+  }
+}
+
+export class CommentNoTargetError extends BadValuesError {
+  constructor() {
+    super("Cannot create a comment without a target!!");
+  }
+}
+
+export class CommentContentEmptyError extends BadValuesError {
+  constructor() {
+    super("Can not create comment with empty content!");
+  }
+}
+
+export class CommentUpdateEmptyError extends BadValuesError {
+  constructor() {
+    super("Empty values for comment update!");
   }
 }

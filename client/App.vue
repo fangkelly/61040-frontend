@@ -22,31 +22,36 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <header>
-    <nav>
-      <div class="title">
-        <img src="@/assets/images/logo.svg" />
-        <RouterLink :to="{ name: 'Home' }">
-          <h1>Social Media App</h1>
-        </RouterLink>
-      </div>
-      <ul>
-        <li>
-          <RouterLink :to="{ name: 'Home' }" :class="{ underline: currentRouteName == 'Home' }"> Home </RouterLink>
-        </li>
-        <li v-if="isLoggedIn">
-          <RouterLink :to="{ name: 'Settings' }" :class="{ underline: currentRouteName == 'Settings' }"> Settings </RouterLink>
-        </li>
-        <li v-else>
-          <RouterLink :to="{ name: 'Login' }" :class="{ underline: currentRouteName == 'Login' }"> Login </RouterLink>
-        </li>
-      </ul>
-    </nav>
-    <article v-if="toast !== null" class="toast" :class="toast.style">
-      <p>{{ toast.message }}</p>
-    </article>
-  </header>
-  <RouterView />
+  <div id="app-container">
+    <header>
+      <nav>
+        <div class="title">
+          <!-- <img src="@/assets/images/logo.svg" /> -->
+          <RouterLink :to="{ name: 'Home' }">
+            <h1>trailMix</h1>
+          </RouterLink>
+        </div>
+        <ul>
+          <li>
+            <RouterLink :to="{ name: 'Home' }" :class="{ underline: currentRouteName == 'Home', link: true }"> Home </RouterLink>
+          </li>
+          <li v-if="isLoggedIn">
+            <RouterLink :to="{ name: 'Profile' }" :class="{ underline: currentRouteName == 'Profile', link: true }"> Profile </RouterLink>
+          </li>
+          <li v-if="isLoggedIn">
+            <RouterLink :to="{ name: 'Settings' }" :class="{ underline: currentRouteName == 'Settings', link: true }"> Settings </RouterLink>
+          </li>
+          <li v-else>
+            <RouterLink :to="{ name: 'Login' }" :class="{ underline: currentRouteName == 'Login', link: true }"> Login </RouterLink>
+          </li>
+        </ul>
+      </nav>
+      <article v-if="toast !== null" class="toast" id="override-toast" :class="toast.style">
+        <p>{{ toast.message }}</p>
+      </article>
+    </header>
+    <RouterView />
+  </div>
 </template>
 
 <style scoped>
@@ -54,14 +59,19 @@ onBeforeMount(async () => {
 
 nav {
   padding: 1em 2em;
-  background-color: lightgray;
+  background-color: #95b08d;
   display: flex;
   align-items: center;
+}
+
+#app-container {
+  background-color: #95b08d;
 }
 
 h1 {
   font-size: 2em;
   margin: 0;
+  color: white;
 }
 
 .title {
@@ -91,5 +101,13 @@ ul {
 
 .underline {
   text-decoration: underline;
+}
+
+.link {
+  color: white;
+}
+
+#override-toast {
+  z-index: 9999;
 }
 </style>

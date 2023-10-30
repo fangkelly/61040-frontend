@@ -1,13 +1,14 @@
 import { Filter, ObjectId } from "mongodb";
 
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { NotAllowedError, NotFoundError } from "./errors";
+import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 
 export interface EventDoc extends BaseDoc {
   owner: ObjectId;
   name: string;
   description: string;
-  start_date: Date;
+  date: Date;
+  time: string;
   attendees: Array<string>;
   tags: Set<string>;
   checklist: Map<string, number>;
@@ -19,8 +20,24 @@ export default class EventConcept {
   public readonly events = new DocCollection<EventDoc>("events");
 
   /** create new event */
-  async create(owner: ObjectId, name: string, description: string, start_date: Date, tags: Set<string>, trail: ObjectId, checklist: Map<string, number>) {
-    const _id = await this.events.createOne({ owner, name, description, start_date, tags, trail, checklist, attendees: [], posts: [] });
+  async create(owner: ObjectId, name: string, description: string, date: Date, time: string, tags: Set<string>, trail: ObjectId, checklist: Map<string, number>) {
+    if (!owner) {
+      throw new BadValuesError("Event must have an owner!");
+    }
+
+    if (!name) {
+      throw new BadValuesError("Event must have a name!");
+    }
+
+    if (!date) {
+      throw new BadValuesError("Event must have a date!");
+    }
+
+    if (!time) {
+      throw new BadValuesError("Event must have a time!");
+    }
+
+    const _id = await this.events.createOne({ owner, name, description, date, time, tags, trail, checklist, attendees: [], posts: [] });
     return { msg: "Event successfully created!", event: await this.events.readOne({ _id }) };
   }
 
@@ -34,6 +51,14 @@ export default class EventConcept {
   async getEvents(query: Filter<EventDoc>) {
     const events = await this.events.readMany(query, {
       sort: { dateUpdated: -1 },
+    });
+    return events;
+  }
+
+  /** get events a user is registered for */
+  async getRegisteredEvents(user: ObjectId) {
+    const events = await this.events.readMany({
+      attendees: user.toString(),
     });
     return events;
   }
@@ -114,6 +139,15 @@ export default class EventConcept {
     }
   }
 
+  async getAttendees(_id: ObjectId) {
+    const event = await this.events.readOne({ _id });
+    if (!event) {
+      throw new NotFoundError(`Event ${_id} does not exist!`);
+    } else {
+      return event.attendees;
+    }
+  }
+
   /** add association of post to event */
   async addPost(_id: ObjectId, postId: ObjectId | undefined) {
     if (!postId) {
@@ -155,6 +189,9 @@ export default class EventConcept {
 
   private sanitizeUpdate(update: Partial<EventDoc>) {
     // Make sure the update cannot change the owner or posts.
+    if (!update) {
+      throw new EventUpdateEmptyError();
+    }
     const allowedUpdates = ["name", "description", "start_date", "attendees", "tags", "checklist", "trail"];
     for (const key in update) {
       if (!allowedUpdates.includes(key)) {
@@ -167,6 +204,12 @@ export default class EventConcept {
 export class EventNotFound extends NotFoundError {
   constructor(_id: ObjectId) {
     super("Event {0} not found!", _id);
+  }
+}
+
+export class EventUpdateEmptyError extends BadValuesError {
+  constructor() {
+    super("No update provided to Event!");
   }
 }
 
@@ -193,7 +236,7 @@ export class AlreadyRegisteredError extends NotAllowedError {
     public readonly user: ObjectId,
     public readonly _id: ObjectId,
   ) {
-    super("{0} is already registered for event{1}!", user, _id);
+    super("{0} is already registered for event {1}!", user, _id);
   }
 }
 
@@ -202,6 +245,6 @@ export class AlreadyUnregisteredError extends NotAllowedError {
     public readonly user: ObjectId,
     public readonly _id: ObjectId,
   ) {
-    super("{0} is already unregistered for event{1}!", user, _id);
+    super("{0} is already unregistered for event {1}!", user, _id);
   }
 }

@@ -7,7 +7,7 @@ import { CommentDoc } from "./concepts/comment";
 import { NotFoundError } from "./concepts/errors";
 import { EventDoc } from "./concepts/event";
 import { PostDoc, PostOptions } from "./concepts/post";
-import { Destination, TrailDoc } from "./concepts/trail";
+import { Location, TrailDoc } from "./concepts/trail";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
@@ -47,7 +47,7 @@ class Routes {
   async deleteUser(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
     WebSession.end(session);
-    return await User.delete(user);
+    await User.delete(user);
   }
 
   @Router.post("/login")
@@ -77,9 +77,9 @@ class Routes {
   }
 
   @Router.post("/posts")
-  async createPost(session: WebSessionDoc, text: string, options?: PostOptions) {
+  async createPost(session: WebSessionDoc, content: string, options?: PostOptions) {
     const user = WebSession.getUser(session);
-    const created = await Post.create(user, text, options);
+    const created = await Post.create(user, content, options);
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
@@ -94,7 +94,48 @@ class Routes {
   async deletePost(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Post.isAuthor(user, _id);
-    return Post.delete(_id);
+    await Post.delete(_id);
+
+    // delete all comments associated with post
+    const comments = await Comment.getByPost(_id);
+    comments.map(async (comment) => {
+      await Comment.delete(comment._id);
+    });
+
+    return { msg: "Deleted post and all comments associated with it!" };
+  }
+
+  /** Comments Routes */
+  @Router.post("/comments")
+  async createComment(session: WebSessionDoc, content: string, target: ObjectId) {
+    const user = WebSession.getUser(session);
+    // make sure target to attach comment to exists
+    await Post.postExists(target);
+    const created = await Comment.create(user, content, target);
+    return { msg: created.msg, comment: await Responses.comment(created.comment) };
+  }
+
+  @Router.delete("/comments/:_id")
+  async deleteComment(session: WebSessionDoc, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    await Comment.isAuthor(user, _id);
+    return Comment.delete(_id);
+  }
+
+  @Router.patch("/comments/:_id")
+  async updateComment(session: WebSessionDoc, _id: ObjectId, update: Partial<CommentDoc>) {
+    const user = WebSession.getUser(session);
+    await Comment.isAuthor(user, _id);
+    return await Comment.update(_id, update);
+  }
+
+  @Router.get("/comments")
+  async getComments(target: ObjectId) {
+    if (!target) {
+      return await Responses.comments(await Comment.getComments({}));
+    }
+
+    return await Responses.comments(await Comment.getByPost(target));
   }
 
   /** Friends Routes */
@@ -166,47 +207,65 @@ class Routes {
     return Responses.events(events);
   }
 
-  @Router.patch("/events/register/:_id")
+  @Router.get("/events/registered")
+  async getRegisteredEvents(user: string) {
+    const id = (await User.getUserByUsername(user))._id;
+    const events = await Event.getRegisteredEvents(id);
+    return Responses.events(events);
+  }
+
+  @Router.patch("/events/:_id/register")
   async registerEvent(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
-    await Event.register(_id, user);
     /** synchronization; automatically create trail with locations populated but empty posts for user to update later on */
     const event = await Event.getEvent(_id);
     if (event) {
       const eventTrail = await Trail.get(event.trail);
-      const trailDestinations = eventTrail?.destinations;
-      if (trailDestinations) {
-        return await Trail.create(user, event?.name, trailDestinations);
+      const locations = eventTrail?.locations;
+      if (locations) {
+        await Event.register(_id, user);
+        return await Trail.create(user, event?.name, event?.description, locations);
       } else {
-        throw new NotFoundError("Could not copy event trail for user");
+        throw new NotFoundError("Could not register event for user");
       }
     } else {
       throw new NotFoundError("Event {0} does not exist", _id);
     }
   }
 
-  @Router.patch("/events/unregister/:_id")
+  @Router.patch("/events/:_id/unregister")
   async unregisterEvent(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     return await Event.unregister(_id, user);
   }
 
+  @Router.get("/events/:_id/attendees")
+  async getAttendees(_id: ObjectId) {
+    const attendees = await Event.getAttendees(_id);
+    const attendeesPromises = attendees.map(async (a) => {
+      return await User.getUserById(new ObjectId(a));
+    });
+    const resoleved = await Promise.all(attendeesPromises);
+    return resoleved;
+  }
+
   @Router.post("/events")
-  async createEvent(session: WebSessionDoc, name: string, description: string, start_date: Date, tags: Set<string>, trail: ObjectId, checklist: Map<string, number>) {
+  async createEvent(session: WebSessionDoc, name: string, description: string, date: Date, time: string, tags: Set<string>, trail: ObjectId, checklist: Map<string, number>) {
     const user = WebSession.getUser(session);
-    const created = await Event.create(user, name, description, start_date, tags, trail, checklist);
+    await Trail.trailExists(trail);
+    const created = await Event.create(user, name, description, date, time, tags, trail, checklist);
     // register yourself for event you created also (or should this happen in the front end? which makes 2 separate calls)
     if (created) {
       if (created.event?._id) {
         const eventTrail = await Trail.get(trail);
-        const trailDestinations = eventTrail?.destinations;
+        const locations = eventTrail?.locations;
         await Event.register(created.event?._id, user);
-        if (trailDestinations) {
-          await Trail.create(user, name, trailDestinations);
+        if (locations) {
+          await Trail.create(user, name, description, locations);
         } else {
-          throw new NotFoundError("Could not copy event trail for user");
+          throw new NotFoundError("Created trail but could not create a copy of the trail for the user");
         }
-        return { msg: created.msg, event: await Responses.event(await Event.getEvent(created.event?._id)) };
+        return { msg: created.msg, event: await Responses.event(await Event.getEvent(created.event._id)) };
       } else {
         throw new NotFoundError("Could not create event");
       }
@@ -217,13 +276,25 @@ class Routes {
   async deleteEvent(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Event.isOwner(user, _id);
-    return Event.delete(_id);
+    const event = await Event.getEvent(_id);
+
+    event?.posts.map(async (post) => {
+      // delete comments associated with post of event
+      const comments = await Comment.getByPost(post);
+      comments.map(async (comment) => {
+        await Comment.delete(comment._id);
+      });
+
+      // delete posts associated with event
+      await Post.delete(post);
+    });
+
+    return await Event.delete(_id);
   }
 
   /** make post to an event only if the user is registered for it */
   @Router.patch("/events/:_id/post")
   async postToEvent(session: WebSessionDoc, _id: ObjectId, text: string, options: PostOptions) {
-    console.log("_id ", _id);
     const user = WebSession.getUser(session);
     await Event.isRegistered(user, _id);
     const created = await Post.create(user, text, options);
@@ -238,43 +309,12 @@ class Routes {
     return await Event.deletePost(_id, postId);
   }
 
-  /** Comments Routes */
-  @Router.post("/comments")
-  async createComment(session: WebSessionDoc, content: string, target: ObjectId) {
-    const user = WebSession.getUser(session);
-    const created = await Comment.create(user, content, target);
-    return { msg: created.msg, event: Responses.comment(created.comment) };
-  }
-
-  @Router.delete("/comments/:_id")
-  async deleteComment(session: WebSessionDoc, _id: ObjectId) {
-    const user = WebSession.getUser(session);
-    await Comment.isAuthor(user, _id);
-    return Comment.delete(_id);
-  }
-
-  @Router.patch("/comments/:_id")
-  async updateComment(session: WebSessionDoc, _id: ObjectId, update: Partial<CommentDoc>) {
-    const user = WebSession.getUser(session);
-    await Comment.isAuthor(user, _id);
-    return await Comment.update(_id, update);
-  }
-
-  @Router.get("/comments")
-  async getComments(target: ObjectId) {
-    console.log("target", target);
-    if (!target) {
-      return await Responses.comments(await Comment.getComments({}));
-    }
-    return await Responses.comments(await Comment.getComments({ target }));
-  }
-
   /** Trails Routes */
   @Router.post("/trails")
-  async createTrail(session: WebSessionDoc, name: string, destinations: Destination[]) {
+  async createTrail(session: WebSessionDoc, name: string, description: string, locations: Location[]) {
     const author = WebSession.getUser(session);
-    const created = await Trail.create(author, name, destinations);
-    return { msg: created.msg, event: created.trail };
+    const created = await Trail.create(author, name, description, locations);
+    return { msg: created.msg, trail: created.trail };
   }
 
   @Router.delete("/trails/:_id")
@@ -289,18 +329,11 @@ class Routes {
     let trails;
     if (author) {
       const id = (await User.getUserByUsername(author))._id;
-      trails = await Trail.getByAuthor(id);
+      trails = await Trail.getTrailsByAuthor(id);
     } else {
       trails = await Trail.getTrails({});
     }
-    return trails;
-  }
-
-  @Router.patch("/trails/:_id")
-  async addDestination(session: WebSessionDoc, _id: ObjectId, destination: Destination) {
-    const user = WebSession.getUser(session);
-    await Trail.isAuthor(user, _id);
-    return await Trail.addDestination(_id, destination);
+    return await Responses.trails(trails);
   }
 
   @Router.patch("/trails/:_id")
@@ -308,6 +341,21 @@ class Routes {
     const user = WebSession.getUser(session);
     await Trail.isAuthor(user, _id);
     return await Trail.update(_id, update);
+  }
+
+  @Router.patch("/trails/:_id/pin")
+  async pinTrail(session: WebSessionDoc, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    await Trail.isAuthor(user, _id);
+    await Trail.checkAvailablePin(user);
+    return await Trail.update(_id, { pinned: true });
+  }
+
+  @Router.patch("/trails/:_id/unpin")
+  async unpinTrail(session: WebSessionDoc, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    await Trail.isAuthor(user, _id);
+    return await Trail.update(_id, { pinned: false });
   }
 }
 

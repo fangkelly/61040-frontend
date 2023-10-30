@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import CreateCommentForm from "@/components/Comment/CreateCommentForm.vue";
 import CommentComponent from "@/components/Comment/CommentComponent.vue";
+import CreateCommentForm from "@/components/Comment/CreateCommentForm.vue";
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";

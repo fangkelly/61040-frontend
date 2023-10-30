@@ -1,25 +1,27 @@
 import { Filter, ObjectId } from "mongodb";
 
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { NotAllowedError, NotFoundError } from "./errors";
+import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 
 export interface PostOptions {
-  backgroundColor?: string;
   location?: [number, number];
   media?: Array<Blob>;
 }
 
 export interface PostDoc extends BaseDoc {
   author: ObjectId;
-  text: string;
+  content: string;
   options?: PostOptions;
 }
 
 export default class PostConcept {
   public readonly posts = new DocCollection<PostDoc>("posts");
 
-  async create(author: ObjectId, text: string, options?: PostOptions) {
-    const _id = await this.posts.createOne({ author, text, options });
+  async create(author: ObjectId, content: string, options?: PostOptions) {
+    if (!content) {
+      throw new PostContentEmptyError();
+    }
+    const _id = await this.posts.createOne({ author, content, options });
     return { msg: "Post successfully created!", post: await this.posts.readOne({ _id }) };
   }
 
@@ -55,12 +57,29 @@ export default class PostConcept {
     }
   }
 
+  async postExists(_id: ObjectId) {
+    const post = await this.posts.readOne({ _id });
+    if (!post) {
+      throw new NotFoundError(`Post ${_id} does not exist!`);
+    }
+  }
+
   private sanitizeUpdate(update: Partial<PostDoc>) {
+    // make sure there is something to update
+    if (!update) {
+      throw new PostUpdateEmptyError();
+    }
+
     // Make sure the update cannot change the author.
     const allowedUpdates = ["content", "options"];
-    for (const key in update) {
+    for (const [key, value] of Object.entries(update)) {
       if (!allowedUpdates.includes(key)) {
         throw new NotAllowedError(`Cannot update '${key}' field!`);
+      }
+
+      // make sure we can't edit the content to empty
+      if (key === "content" && !value) {
+        throw new PostContentEmptyError();
       }
     }
   }
@@ -72,5 +91,17 @@ export class PostAuthorNotMatchError extends NotAllowedError {
     public readonly _id: ObjectId,
   ) {
     super("{0} is not the author of post {1}!", author, _id);
+  }
+}
+
+export class PostContentEmptyError extends BadValuesError {
+  constructor() {
+    super("Can not create post with empty content!");
+  }
+}
+
+export class PostUpdateEmptyError extends BadValuesError {
+  constructor() {
+    super("Empty post update!");
   }
 }
