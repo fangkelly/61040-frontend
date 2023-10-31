@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
-import { fetchy } from "../../utils/fetchy";
 import { onBeforeMount, ref } from "vue";
+import { fetchy } from "../../utils/fetchy";
+import { abbreviateMonth, formatTime } from "../../utils/formatDate";
 
 const props = defineProps(["event"]);
 const { currentUsername } = storeToRefs(useUserStore());
@@ -70,8 +71,8 @@ const viewDetails = () => {
 <template>
   <div class="event-preview-container">
     <div class="event-preview-left">
-      <p class="event-preview-month">{{ props.event.time }}</p>
-      <p class="event-preview-date">{{ props.event.date }}</p>
+      <p class="event-preview-month">{{ abbreviateMonth(parseInt(props.event.date.month)) }}</p>
+      <p class="event-preview-date">{{ props.event.date.date }}</p>
     </div>
     <v-divider class="border-opacity-100" vertical></v-divider>
     <div class="event-preview-right">
@@ -79,7 +80,7 @@ const viewDetails = () => {
       <p class="event-preview-owner truncate">
         Hosted by <span class="underline">{{ props.event.owner }}</span>
       </p>
-      <p class="event-preview-time">{{ props.event.time }}</p>
+      <p class="event-preview-time">{{ formatTime(props.event.time.hour, props.event.time.minute, props.event.time.am) }}</p>
       <div class="row">
         <button v-if="registered" @click="unregisterEvent">Unregister</button>
         <button v-else @click="registerEvent">Register</button>

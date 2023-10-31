@@ -7,7 +7,7 @@ import { CommentDoc } from "./concepts/comment";
 import { NotFoundError } from "./concepts/errors";
 import { EventDoc } from "./concepts/event";
 import { PostDoc, PostOptions } from "./concepts/post";
-import { Location, TrailDoc } from "./concepts/trail";
+import { TrailDoc } from "./concepts/trail";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
@@ -224,7 +224,7 @@ class Routes {
       const locations = eventTrail?.locations;
       if (locations) {
         await Event.register(_id, user);
-        return await Trail.create(user, event?.name, event?.description, locations);
+        return await Trail.create(user, event?.name, event?.description, locations, eventTrail.duration, eventTrail.distance);
       } else {
         throw new NotFoundError("Could not register event for user");
       }
@@ -250,18 +250,34 @@ class Routes {
   }
 
   @Router.post("/events")
-  async createEvent(session: WebSessionDoc, name: string, description: string, date: Date, time: string, tags: Set<string>, trail: ObjectId, checklist: Map<string, number>) {
+  async createEvent(
+    session: WebSessionDoc,
+    body: {
+      name: string;
+      description: string;
+      date: { month: string; date: string; year: string };
+      time: { hour: string; minute: string; am: boolean };
+      tags: {
+        terrain: Array<string>;
+        activity: Array<string>;
+        other: Array<string>;
+        difficulty: string;
+      };
+      checklist: Array<Record<string, number>>;
+      trail: ObjectId;
+    },
+  ) {
     const user = WebSession.getUser(session);
-    await Trail.trailExists(trail);
-    const created = await Event.create(user, name, description, date, time, tags, trail, checklist);
+    await Trail.trailExists(body.trail);
+    const created = await Event.create({ ...body, owner: user, posts: [], attendees: [] });
     // register yourself for event you created also (or should this happen in the front end? which makes 2 separate calls)
     if (created) {
       if (created.event?._id) {
-        const eventTrail = await Trail.get(trail);
+        const eventTrail = await Trail.get(body.trail);
         const locations = eventTrail?.locations;
         await Event.register(created.event?._id, user);
         if (locations) {
-          await Trail.create(user, name, description, locations);
+          await Trail.create(user, body.name, body.description, locations, eventTrail.duration, eventTrail.distance);
         } else {
           throw new NotFoundError("Created trail but could not create a copy of the trail for the user");
         }
@@ -270,6 +286,7 @@ class Routes {
         throw new NotFoundError("Could not create event");
       }
     }
+    throw new NotFoundError("Could not create event");
   }
 
   @Router.delete("/events/:_id")
@@ -311,10 +328,11 @@ class Routes {
 
   /** Trails Routes */
   @Router.post("/trails")
-  async createTrail(session: WebSessionDoc, name: string, description: string, locations: Location[]) {
+  async createTrail(session: WebSessionDoc, body: { name: string; description: string; locations: Array<{ lat: number; lng: number; post?: ObjectId }>; duration: number; distance: number }) {
+    console.log("BODY ", body);
     const author = WebSession.getUser(session);
-    const created = await Trail.create(author, name, description, locations);
-    return { msg: created.msg, trail: created.trail };
+    const created = await Trail.create(author, body.name, body.description, body.locations, body.distance, body.duration);
+    return { msg: created.msg, trail: await Responses.trail(created.trail) };
   }
 
   @Router.delete("/trails/:_id")

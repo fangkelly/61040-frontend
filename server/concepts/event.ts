@@ -7,11 +7,34 @@ export interface EventDoc extends BaseDoc {
   owner: ObjectId;
   name: string;
   description: string;
-  date: Date;
-  time: string;
-  attendees: Array<string>;
-  tags: Set<string>;
-  checklist: Map<string, number>;
+  date: { month: string; date: string; year: string };
+  time: { hour: string; minute: string; am: boolean };
+  attendees: Array<ObjectId>;
+  tags: {
+    terrain: Array<string>;
+    activity: Array<string>;
+    other: Array<string>;
+    difficulty: string;
+  };
+  checklist: Array<Record<string, number>>;
+  posts: Array<ObjectId>;
+  trail: ObjectId;
+}
+
+export interface Event {
+  owner: ObjectId;
+  name: string;
+  description: string;
+  date: { month: string; date: string; year: string };
+  time: { hour: string; minute: string; am: boolean };
+  attendees: Array<ObjectId>;
+  tags: {
+    terrain: Array<string>;
+    activity: Array<string>;
+    other: Array<string>;
+    difficulty: string;
+  };
+  checklist: Array<Record<string, number>>;
   posts: Array<ObjectId>;
   trail: ObjectId;
 }
@@ -20,24 +43,24 @@ export default class EventConcept {
   public readonly events = new DocCollection<EventDoc>("events");
 
   /** create new event */
-  async create(owner: ObjectId, name: string, description: string, date: Date, time: string, tags: Set<string>, trail: ObjectId, checklist: Map<string, number>) {
-    if (!owner) {
+  async create(event: Event) {
+    if (!event.owner) {
       throw new BadValuesError("Event must have an owner!");
     }
 
-    if (!name) {
+    if (!event.name) {
       throw new BadValuesError("Event must have a name!");
     }
 
-    if (!date) {
+    if (!event.date) {
       throw new BadValuesError("Event must have a date!");
     }
 
-    if (!time) {
+    if (!event.time) {
       throw new BadValuesError("Event must have a time!");
     }
 
-    const _id = await this.events.createOne({ owner, name, description, date, time, tags, trail, checklist, attendees: [], posts: [] });
+    const _id = await this.events.createOne(event);
     return { msg: "Event successfully created!", event: await this.events.readOne({ _id }) };
   }
 
@@ -58,7 +81,7 @@ export default class EventConcept {
   /** get events a user is registered for */
   async getRegisteredEvents(user: ObjectId) {
     const events = await this.events.readMany({
-      attendees: user.toString(),
+      attendees: user,
     });
     return events;
   }
@@ -88,10 +111,10 @@ export default class EventConcept {
       throw new NotFoundError(`Event ${_id} does not exist!`);
     }
 
-    if (event.attendees.includes(user.toString())) {
+    if (event.attendees.includes(user)) {
       throw new AlreadyRegisteredError(user, _id);
     } else {
-      const attendees = [...event.attendees, user.toString()];
+      const attendees = [...event.attendees, user];
       await this.update(_id, { attendees });
       return { msg: `User ${user} registered for Event ${_id} successfully!` };
     }
@@ -108,10 +131,10 @@ export default class EventConcept {
       throw new NotAllowedError("Owner can't unregister from their own event!");
     }
 
-    if (!event.attendees.indexOf(user.toString())) {
+    if (!event.attendees.indexOf(user)) {
       throw new AlreadyUnregisteredError(user, _id);
     } else {
-      const attendees = event.attendees.filter((a) => a !== user.toString());
+      const attendees = event.attendees.filter((a) => a !== user);
       await this.update(_id, { attendees });
       return { msg: `User ${user} unregistered for Event ${_id} successfully!` };
     }

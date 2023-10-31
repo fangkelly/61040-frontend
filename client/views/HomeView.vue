@@ -3,6 +3,7 @@ import EventComposerComponent from "@/components/Event/EventComposerComponent.vu
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { onBeforeMount, ref } from "vue";
+import MapVisualizerComponent from "../components/Map/MapVisualizerComponent.vue";
 import { fetchy } from "../utils/fetchy";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 const mapView = ref(true);
@@ -31,7 +32,7 @@ onBeforeMount(async () => {
 
 <template>
   <main>
-    <section class="row home-buttons">
+    <section id="home-nav" class="row home-buttons">
       <section class="create-content row">
         <v-icon color="white">mdi-post</v-icon>
         <EventComposerComponent :trails="allTrails" />
@@ -44,15 +45,24 @@ onBeforeMount(async () => {
     </section>
 
     <section>
-      <!-- <div v-if="mapView"><MapContainer /></div>
-      <div v-else><PostListComponent /></div> -->
+      <div v-if="mapView"><MapVisualizerComponent mapRef="home-map-container" /></div>
+      <div v-else><PostListComponent /></div>
     </section>
   </main>
 </template>
 
 <style scoped>
+#home-map-container {
+  position: relative;
+  height: 100vh;
+}
+
 h1 {
   text-align: center;
+}
+
+#home-nav {
+  background-color: #95b08da3;
 }
 
 .create-content {

@@ -2,24 +2,23 @@ import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 
-export interface Location {
-  location: { lat: number; lng: number };
-  item?: ObjectId;
-}
+export type Locations = Array<{ lat: number; lng: number; post?: ObjectId }>;
 
 export interface TrailDoc extends BaseDoc {
   author: ObjectId;
   name: string;
   description: string;
-  locations: Location[];
+  locations: Locations;
   pinned: boolean;
+  distance: number;
+  duration: number;
 }
 
 export default class TrailConcept {
   public readonly trails = new DocCollection<TrailDoc>("trails");
 
   /** create new trail */
-  async create(author: ObjectId, name: string, description: string, locations: Location[]) {
+  async create(author: ObjectId, name: string, description: string, locations: Locations, duration: number, distance: number) {
     if (!name) {
       throw new TrailFieldMissing("name");
     }
@@ -28,9 +27,11 @@ export default class TrailConcept {
       throw new TrailFieldMissing("description");
     }
 
-    if (!locations) locations = [];
+    if (!locations) {
+      throw new TrailFieldMissing("location");
+    }
 
-    const _id = await this.trails.createOne({ author, name, description, locations });
+    const _id = await this.trails.createOne({ author, name, description, locations, pinned: false, duration, distance });
     return { msg: "Trail successfully created!", trail: await this.trails.readOne({ _id }) };
   }
 

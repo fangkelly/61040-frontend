@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import MapComponent from "@/components/Map/MapComponent.vue";
-const props = defineProps(["trails"]);
-const emit = defineEmits("updateSelectedTrail");
+import MapVisualizerComponent from "@/components/Map/MapVisualizerComponent.vue";
+import { computed, ref } from "vue";
+const props = defineProps(["trails", "trailValue"]);
+const emit = defineEmits("update:trailValue");
 
-const updateSelectedTrail = () => {
-  emit("updateSelectedTrail", selectedTrail);
-};
-
-let selectedTrail = ref();
 let distance = ref(0);
 let duration = ref(0);
+
+const selectedTrail = computed({
+  get() {
+    return props.trailValue;
+  },
+  set(value) {
+    emit("update:trailValue", value);
+  },
+});
 
 const updateDistanceTime = (info) => {
   distance.value = info.distance;
@@ -35,17 +39,7 @@ const trailSelectRules = [
 <template>
   <v-row>
     <v-col>
-      <v-select
-        color="#95b08d"
-        variant="outlined"
-        clearable
-        @update:modelValue="updateSelectedTrail()"
-        v-model="selectedTrail"
-        label="Select from existing trail"
-        :items="props.trails"
-        :itemProps="itemProps"
-        :rules="trailSelectRules"
-      >
+      <v-select color="#95b08d" variant="outlined" clearable v-model="selectedTrail" label="Select from existing trail" :items="props.trails" :itemProps="itemProps" :rules="trailSelectRules">
       </v-select>
       <div v-if="selectedTrail">
         <h3>{{ selectedTrail.name }}</h3>
@@ -57,7 +51,7 @@ const trailSelectRules = [
     </v-col>
     <v-col>
       <div class="section map-container">
-        <MapComponent :trails="[selectedTrail]" @updateDistanceTime="updateDistanceTime" :draggable="false" />
+        <MapVisualizerComponent mapRef="trail-picker-map" :trails="[selectedTrail]" @updateDistanceTime="updateDistanceTime" :draggable="false" />
       </div>
     </v-col>
   </v-row>

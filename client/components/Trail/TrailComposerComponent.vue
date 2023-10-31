@@ -1,14 +1,27 @@
 <script setup lang="ts">
-import MapComponent from "@/components/Map/MapComponent.vue";
-import { computed, ref } from "vue";
-const emit = defineEmits(["updateComposedTrail", "update:nameValue", "update:DescriptionValue"]);
-const props = defineProps(["nameValue", "descriptionValue", "locations"]);
+import MapVisualizerComponent from "@/components/Map/MapVisualizerComponent.vue";
+import LocationEntryComponent from "@/components/Trail/LocationEntryComponent.vue";
+import { computed } from "vue";
+const emit = defineEmits(["update:trailValue", "update:nameValue", "update:descriptionValue", "update:distanceValue", "update:durationValue"]);
+const props = defineProps(["nameValue", "descriptionValue", "trailValue", "distanceValue", "durationValue"]);
 
-// location: list of coordinates {lat, lng}
-let trail = ref(props.locations);
+const distance = computed({
+  get() {
+    return props.distanceValue;
+  },
+  set(value) {
+    emit("update:distanceValue", value);
+  },
+});
 
-let distance = ref(0);
-let duration = ref(0);
+const duration = computed({
+  get() {
+    return props.durationValue;
+  },
+  set(value) {
+    emit("update:durationValue", value);
+  },
+});
 
 const name = computed({
   get() {
@@ -28,6 +41,15 @@ const description = computed({
   },
 });
 
+const trail = computed({
+  get() {
+    return props.trailValue;
+  },
+  set(value) {
+    emit("update:trailValue", value);
+  },
+});
+
 const trailList = computed(() => {
   return [{ locations: trail.value }];
 });
@@ -37,31 +59,8 @@ const updateTrail = (value, index, field) => {
   newTrail[index][field] = value;
   trail.value = newTrail;
 
-  emit("updateComposedTrail", trail);
+  emit("update:trailValue", trail.value);
 };
-
-const updateTrailName = () => {
-  emit("updateTrailName", name);
-};
-
-const updateTrailDescription = () => {
-  emit("updateTrailDescription", description);
-};
-
-const latitiudeRules = [
-  (c) => {
-    if (!isNaN(c) && !isNaN(parseFloat(c))) {
-      return true;
-    }
-    return "Coordinate must be a number!";
-  },
-  (c) => {
-    if (Math.abs(parseFloat(c)) <= 90) {
-      return true;
-    }
-    return "Latitude must be between -90 and 90!";
-  },
-];
 
 const nameRules = [
   (v) => {
@@ -74,21 +73,6 @@ const descriptionRules = [
   (v) => {
     if (v) return true;
     return "You must enter a name for your description";
-  },
-];
-
-const longitudeRules = [
-  (c) => {
-    if (!isNaN(c) && !isNaN(parseFloat(c))) {
-      return true;
-    }
-    return "Coordinate must be a number!";
-  },
-  (c) => {
-    if (Math.abs(parseFloat(c)) <= 180) {
-      return true;
-    }
-    return "Latitude must be between -180 and 180!";
   },
 ];
 
@@ -128,29 +112,13 @@ function updateMarkerLocation(update) {
       <v-divider></v-divider>
 
       <div class="location-container">
-        <div v-for="(location, counter) in trail" v-bind:key="counter">
+        <div v-for="(loc, counter) in trail" v-bind:key="counter">
           <div class="location-label">
             <p>Location {{ counter + 1 }}</p>
             <v-icon v-if="trail.length > 1" size="x-small" @click="deleteItem(counter)">mdi-close</v-icon>
           </div>
-          <div class="location-entry">
-            <v-text-field
-              @update:modelValue="(value) => updateTrail(value, counter, 'lat')"
-              v-model="location.lat"
-              v-bind:label="`Latitude`"
-              color="#95b08d"
-              variant="outlined"
-              :rules="latitiudeRules"
-            />
-            <v-text-field
-              @update:modelValue="(value) => updateTrail(value, counter, 'lng')"
-              v-model="location.lng"
-              v-bind:label="`Longitude`"
-              color="#95b08d"
-              variant="outlined"
-              :rules="longitudeRules"
-            />
-          </div>
+
+          <LocationEntryComponent :loc="loc" :counter="counter" @update-coordinate="updateTrail" @updateMarkerLocation="updateMarkerLocation" />
         </div>
 
         <button id="add-item-btn" @click="addItem" type="button">Add another location <v-icon size="x-small">mdi-plus</v-icon></button>
@@ -160,7 +128,7 @@ function updateMarkerLocation(update) {
     <v-divider vertical />
     <v-col class="trail-fields-container">
       <div class="map-container">
-        <MapComponent :trails="trailList" @updateDistanceTime="updateDistanceTime" :draggable="true" @updateMarkerLocation="updateMarkerLocation" />
+        <MapVisualizerComponent mapRef="trail-composer-map" :trails="trailList" @updateDistanceTime="updateDistanceTime" :draggable="true" @updateMarkerLocation="updateMarkerLocation" />
       </div>
       <v-divider></v-divider>
 
@@ -182,17 +150,6 @@ function updateMarkerLocation(update) {
   column-gap: 0.5em;
   align-items: center;
   justify-content: space-between;
-}
-.location-entry {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  column-gap: 0.5em;
-  width: 100%;
-  padding-bottom: 1em;
-}
-.location-entry > * {
-  width: 50%;
 }
 
 .trail-fields-container {

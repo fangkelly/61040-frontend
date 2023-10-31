@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useToastStore } from "@/stores/toast";
-import * as turf from "@turf/turf";
 import mapboxgl from "mapbox-gl";
 import { onMounted, onUnmounted, onUpdated, ref } from "vue";
 mapboxgl.accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
 
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
 
-const props = defineProps(["trails", "draggable"]);
+// trails is list of objects with author, name, description, location (lat,lng, post), pinned, distance,
+const props = defineProps(["trails", "draggable", "mapRef"]);
+
 const emit = defineEmits(["updateDistanceTime", "updateMarkerLocation"]);
 
 // list of id references for markers
@@ -18,7 +19,7 @@ let { lng, lat, bearing, pitch, zoom } = { lng: -158.124, lat: 21.431, bearing: 
 
 onMounted(() => {
   map = new mapboxgl.Map({
-    container: "mapContainer",
+    container: props.mapRef,
     style: "mapbox://styles/fangk/cln4vt2gg06w901qrgym22cdp",
     center: [lng, lat],
     bearing,
@@ -96,52 +97,6 @@ async function getDirections(trail) {
     return resJSON;
   } else {
     useToastStore().showToast({ message: resJSON.message, style: res.ok ? "success" : "error" });
-  }
-}
-
-function clearMap() {
-  if (map.getLayer("waypoints")) {
-    map.removeLayer("waypoints");
-    map.removeSource("waypoints");
-  }
-
-  if (map.getLayer("route")) {
-    map.removeLayer("route");
-    map.removeSource("route");
-  }
-}
-
-function flyTo(center) {
-  map.flyTo({
-    center: center,
-    essential: true, // this animation is considered essential with respect to prefers-reduced-motion
-  });
-}
-
-function fitToBbox(geoObject) {
-  var bounds = turf.bbox(geoObject);
-  map.fitBounds([
-    [bounds[0], bounds[1]], // southwestern corner of the bounds
-    [bounds[2], bounds[3]], // northeastern corner of the bounds
-  ]);
-}
-
-function mapPoints(points) {
-  if (map.getLayer("waypoints")) {
-    map.getSource("waypoints").setData(points);
-  } else {
-    map.addLayer({
-      id: "waypoints",
-      type: "circle",
-      source: {
-        type: "geojson",
-        data: points,
-      },
-      paint: {
-        "circle-radius": 10,
-        "circle-color": "#E46363",
-      },
-    });
   }
 }
 
@@ -268,7 +223,6 @@ async function mapTrail(trail) {
       mapMarkers(locations);
     }
     mapPoints(points);
-
     flyTo(center);
   } else {
     const directions = await getDirections(sanitizedTrail);
@@ -298,14 +252,22 @@ async function mapTrail(trail) {
         }),
       );
     }
+    waypoints.map((waypoint) => {
+      emit("updateMarkerLocation", { index: index, lng: waypoint.location[0], lat: waypoint.location[1] });
+    });
+
     mapPoints(points);
     fitToBbox(points);
   }
 }
 
 onUpdated(async () => {
-  if (props.trails[0]) {
-    await mapTrail(props.trails[0]);
+  if (props.trails) {
+    const trailPromises = props.trails.map(async (trail) => {
+      return await mapTrail(trail);
+    });
+
+    await Promise.all(trailPromises);
   } else {
     clearMap();
   }
@@ -318,7 +280,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div id="mapContainer" class="map-container"></div>
+  <div :id="props.mapRef" class="map-container"></div>
 </template>
 
 <style>

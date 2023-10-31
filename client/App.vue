@@ -65,7 +65,7 @@ nav {
 }
 
 #app-container {
-  background-color: #95b08d;
+  /* background-color: #95b08d; */
 }
 
 h1 {

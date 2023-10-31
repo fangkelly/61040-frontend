@@ -2,12 +2,14 @@
 import TrailComposerComponentVue from "@/components/Trail/TrailComposerComponent.vue";
 import TrailPickerComponent from "@/components/Trail/TrailPickerComponent.vue";
 import { ref } from "vue";
+import { useToastStore } from "../../stores/toast";
+import { fetchy } from "../../utils/fetchy";
 
 const props = defineProps(["trails"]);
 
 /** optional tags and the associated refs for storing them */
 const difficultyTags = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
-let difficulty = ref([]);
+let difficulty = ref();
 
 const activityTags = ["Camping", "Running", "Climbing", "Fishing", "Swimming", "Backpacking", "Biking", "Ski", "Ice Climbing"];
 let activity = ref([]);
@@ -35,12 +37,12 @@ const checklistItems = [
   "Helmet",
   "Climbing Shoes",
 ];
-let checklist = ref<Array<Record<string, string>>>([{ item: "", qty: "" }]);
+let checklist = ref<Array<Record<string, string>>>([{ item: "", qty: "1" }]);
 
 function addItem() {
   checklist.value.push({
     item: "",
-    qty: "",
+    qty: "1",
   });
 }
 function deleteItem(index: number) {
@@ -103,64 +105,123 @@ const dateRules = [
   },
 ];
 
+const quantityRules = [
+  (v) => {
+    if (v > 0) return true;
+    return "Quantity must be greater than 0!";
+  },
+];
+
 /** deals with trail selection and visualization */
 let selectedTrail = ref();
-const updateSelectedTrail = (trail) => {
-  selectedTrail.value = trail;
-};
-let composedTrail = ref();
-const updateComposedTrail = (trail) => {
-  console.log("UPDATED COMPOSED TRAIL ", updateComposedTrail);
-  composedTrail.value = trail;
-};
-
 let trailName = ref("");
-const updateTrailName = (name) => {
-  console.log("UPDATE TRAIL NAME with ", name);
-  trailName.value = name;
-};
-
 let trailDescription = ref("");
-const updateTrailDescription = (description) => {
-  trailDescription.value = description;
-};
-
 let draftTrail = ref(false);
+let trailDistance = ref(0);
+let trailDuration = ref(0);
+let composedTrail = ref([{ lng: ``, lat: `` }]);
+
+const updateComposedTrail = (trail) => {
+  composedTrail.value = [...trail];
+};
 
 /** functions for handling the creation of event */
 const createEvent = async () => {
-  /** TODO */
-
-  console.log("composed trail ", composedTrail);
-
   let trail;
 
   if (draftTrail.value) {
+    const trailJSON = JSON.parse(JSON.stringify(composedTrail.value));
     trail = {
       name: trailName.value,
       description: trailDescription.value,
-      // locations composedTrail.value:
+      locations: trailJSON,
+      distance: trailDistance.value,
+      duration: trailDuration.value,
+    };
+  } else {
+    const trailJSON = JSON.parse(JSON.stringify(selectedTrail.value));
+    trail = {
+      name: trailJSON.name,
+      description: trailJSON.description,
+      locations: trailJSON.locations,
+      distance: trailJSON.distance,
+      duration: trailJSON.duration,
     };
   }
 
-  console.log("EVENT");
+  const trailResponse = await fetchy(`/api/trails`, "POST", { body: trail });
 
-  console.log({
-    name: eventName,
-    description: eventDescription,
-    datetime: date,
-    difficulty: difficulty,
-    activity: activity,
-    terrain: terrain,
-    trail: "",
-    checklist: [],
-  });
+  if (!trailResponse.ok) {
+    useToastStore().showToast({ message: trailResponse.message, style: trailResponse.ok ? "success" : "error" });
+  }
 
-  // emptyForm();
+  const dateTime = date.value.split("T");
+  const dateArray = dateTime[0].split("-");
+  const year = dateArray[0];
+  const month = dateArray[1];
+  const d = dateArray[2];
+  const timeArray = dateTime[1].split(":");
+  const hour = timeArray[0] % 12 === 0 ? 12 : timeArray[0] % 12;
+  const minute = timeArray[1];
+  const am = timeArray[0] < 12;
+
+  const sanitizedDate = {
+    year,
+    month,
+    date: d,
+  };
+
+  const sanitizedTime = {
+    hour: hour.toString(),
+    minute,
+    am,
+  };
+
+  const event = {
+    name: eventName.value,
+    description: eventDescription.value,
+    date: sanitizedDate,
+    time: sanitizedTime,
+    tags: {
+      difficulty: difficulty.value,
+      activity: JSON.parse(JSON.stringify(activity.value)),
+      terrain: JSON.parse(JSON.stringify(terrain.value)),
+      other: JSON.parse(JSON.stringify(other.value)),
+    },
+    trail: trailResponse.trail._id,
+    checklist: JSON.parse(JSON.stringify(checklist.value)),
+  };
+
+  const eventResponse = await fetchy(`/api/events`, "POST", { body: event });
+
+  useToastStore().showToast({ message: eventResponse.msg, style: eventResponse.ok ? "success" : "error" });
+  emptyForm();
 };
 
 const emptyForm = () => {
-  /** TODO */
+  difficulty.value = "";
+  terrain.value = [];
+  activity.value = [];
+  other.value = [];
+  checklist.value = [{ item: "", qty: "1" }];
+
+  eventName.value = "";
+  eventDescription.value = "";
+  date.value = "";
+
+  currentPage.value = 0;
+  validDetails.value = false;
+  validLocation.value = false;
+
+  selectedTrail.value = ref();
+  trailName.value = "";
+  trailDescription.value = "";
+  draftTrail.value = false;
+  trailDistance.value = 0;
+  trailDuration.value = 0;
+  composedTrail.value = [{ lng: ``, lat: `` }];
+
+  showForm.value = false;
 };
 
 function toggleForm() {
@@ -212,7 +273,7 @@ function toggleForm() {
             <button v-if="!draftTrail" type="button" id="create-trail-btn" @click="draftTrail = true">Create Trail <v-icon color="#474747" size="x-small">mdi-pencil</v-icon></button>
             <button v-else type="button" id="create-trail-btn" @click="draftTrail = false">Find Trail <v-icon color="#474747" size="x-small">mdi-archive</v-icon></button>
           </div>
-          <TrailPickerComponent v-if="!draftTrail" :trails="props.trails" @updateSelectedTrail="updateSelectedTrail" />
+          <TrailPickerComponent v-if="!draftTrail" :trails="props.trails" :trail-value="selectedTrail" @update:trail-value="(newTrail) => (selectedTrail = newTrail)" />
           <TrailComposerComponentVue
             v-else
             :name-value="trailName"
@@ -223,8 +284,12 @@ function toggleForm() {
             "
             :description-value="trailDescription"
             @update:description-value="(newTrailDescription) => (trailDescription = newTrailDescription)"
-            @updateComposedTrail="updateComposedTrail"
-            :locations="[{ lng: ``, lat: `` }]"
+            @update:trail-value="updateComposedTrail"
+            :trail-value="composedTrail"
+            :distance-value="trailDistance"
+            @update:distance-value="(oldTrailDistance) => (trailDistance = oldTrailDistance)"
+            @update:duration-value="(oldTrailDuration) => (trailDuration = oldTrailDuration)"
+            :duration-value="trailDuration"
           />
         </div>
       </v-form>
@@ -246,7 +311,7 @@ function toggleForm() {
                   color="#95b08d"
                   variant="outlined"
                 ></v-combobox>
-                <v-text-field v-model="entry.qty" single-line type="number" width="100" density="compact" variant="outlined" color="#95b08d" label="Qty."></v-text-field>
+                <v-text-field v-model="entry.qty" single-line type="number" width="100" density="compact" variant="outlined" color="#95b08d" label="Qty." :rules="quantityRules"></v-text-field>
                 <v-icon @click="deleteItem(counter)" size="x-small">mdi-close</v-icon>
               </div>
               <div class="center">
@@ -274,6 +339,8 @@ function toggleForm() {
 </template>
 
 <style scoped>
+@import "../../assets/toast.css";
+
 .combo-box {
   width: 400px;
 }
