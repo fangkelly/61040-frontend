@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useToastStore } from "@/stores/toast";
+import * as turf from "@turf/turf";
 import mapboxgl from "mapbox-gl";
 import { onMounted, onUnmounted, onUpdated, ref } from "vue";
 mapboxgl.accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
@@ -9,7 +10,7 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo
 // trails is list of objects with author, name, description, location (lat,lng, post), pinned, distance,
 const props = defineProps(["trails", "draggable", "mapRef"]);
 
-const emit = defineEmits(["updateDistanceTime", "updateMarkerLocation"]);
+const emit = defineEmits(["updateDistanceTime", "updateMarkerLocation", "updateCorrectedTrail"]);
 
 // list of id references for markers
 let currentMarkers = ref([]);
@@ -173,6 +174,11 @@ function mapRoute(route) {
 async function mapTrail(trail) {
   const center = map.getCenter();
 
+  if (!trail) {
+    clearAllMarkers();
+    clearMap();
+  }
+
   // map empty locations of trails to current center of map so that user can move the markers
   const sanitizedTrail = {
     locations: trail.locations.map((loc) => {
@@ -218,6 +224,8 @@ async function mapTrail(trail) {
       ],
     };
 
+    emit("updateCorrectedTrail", trail.locations);
+
     if (props.draggable) {
       clearAllMarkers();
       mapMarkers(locations);
@@ -252,9 +260,12 @@ async function mapTrail(trail) {
         }),
       );
     }
-    directions.waypoints.map((waypoint) => {
-      emit("updateMarkerLocation", { index: index, lng: waypoint.location[0], lat: waypoint.location[1] });
+    const correctedTrail = directions.waypoints.map((w) => {
+      const loc = w.location;
+      return { lat: loc[1], lng: loc[0] };
     });
+
+    emit("updateCorrectedTrail", correctedTrail);
 
     mapPoints(points);
     fitToBbox(points);
@@ -309,6 +320,18 @@ function mapPoints(points) {
         "circle-color": "#E46363",
       },
     });
+  }
+}
+
+function clearMap() {
+  if (map.getLayer("waypoints")) {
+    map.removeLayer("waypoints");
+    map.removeSource("waypoints");
+  }
+
+  if (map.getLayer("route")) {
+    map.removeLayer("route");
+    map.removeSource("route");
   }
 }
 </script>

@@ -10,6 +10,8 @@ console.log("selectedTrail ", props.selectedTrail);
     <h6>{{ selectedTrail.distance }} miles</h6>
     <h6>{{ selectedTrail.duration }} hours</h6>
 
+    {{ selectedTrail }}
+
     <v-divider class="divider"></v-divider>
   </v-sheet>
 </template>

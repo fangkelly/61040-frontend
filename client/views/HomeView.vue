@@ -3,7 +3,6 @@ import EventComposerComponent from "@/components/Event/EventComposerComponent.vu
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { onBeforeMount, ref } from "vue";
-import MapVisualizerComponent from "../components/Map/MapVisualizerComponent.vue";
 import { fetchy } from "../utils/fetchy";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 const mapView = ref(true);
@@ -45,8 +44,8 @@ onBeforeMount(async () => {
     </section>
 
     <section>
-      <div v-if="mapView"><MapVisualizerComponent mapRef="home-map-container" /></div>
-      <div v-else><PostListComponent /></div>
+      <!-- <div v-if="mapView"><MapVisualizerComponent mapRef="home-map-container" /></div> -->
+      <!-- <div v-else><PostListComponent /></div> -->
     </section>
   </main>
 </template>

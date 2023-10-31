@@ -120,6 +120,7 @@ let draftTrail = ref(false);
 let trailDistance = ref(0);
 let trailDuration = ref(0);
 let composedTrail = ref([{ lng: ``, lat: `` }]);
+let correctTrail = ref();
 
 const updateComposedTrail = (trail) => {
   composedTrail.value = [...trail];
@@ -130,7 +131,7 @@ const createEvent = async () => {
   let trail;
 
   if (draftTrail.value) {
-    const trailJSON = JSON.parse(JSON.stringify(composedTrail.value));
+    const trailJSON = JSON.parse(JSON.stringify(correctTrail.value));
     trail = {
       name: trailName.value,
       description: trailDescription.value,
@@ -287,9 +288,15 @@ function toggleForm() {
             @update:trail-value="updateComposedTrail"
             :trail-value="composedTrail"
             :distance-value="trailDistance"
-            @update:distance-value="(oldTrailDistance) => (trailDistance = oldTrailDistance)"
-            @update:duration-value="(oldTrailDuration) => (trailDuration = oldTrailDuration)"
+            @update:distance-value="(newTrailDistance) => (trailDistance = newTrailDistance)"
+            @update:duration-value="(newTrailDuration) => (trailDuration = newTrailDuration)"
             :duration-value="trailDuration"
+            @update:corrected-trail-value="
+              (trail) => {
+                console.log(`in update corrected trail value`);
+                correctTrail = trail;
+              }
+            "
           />
         </div>
       </v-form>

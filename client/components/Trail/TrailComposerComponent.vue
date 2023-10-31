@@ -2,7 +2,7 @@
 import MapVisualizerComponent from "@/components/Map/MapVisualizerComponent.vue";
 import LocationEntryComponent from "@/components/Trail/LocationEntryComponent.vue";
 import { computed } from "vue";
-const emit = defineEmits(["update:trailValue", "update:nameValue", "update:descriptionValue", "update:distanceValue", "update:durationValue"]);
+const emit = defineEmits(["update:trailValue", "update:nameValue", "update:descriptionValue", "update:distanceValue", "update:durationValue", "update:correctedTrailValue"]);
 const props = defineProps(["nameValue", "descriptionValue", "trailValue", "distanceValue", "durationValue"]);
 
 const distance = computed({
@@ -128,7 +128,18 @@ function updateMarkerLocation(update) {
     <v-divider vertical />
     <v-col class="trail-fields-container">
       <div class="map-container">
-        <MapVisualizerComponent mapRef="trail-composer-map" :trails="trailList" @updateDistanceTime="updateDistanceTime" :draggable="true" @updateMarkerLocation="updateMarkerLocation" />
+        <MapVisualizerComponent
+          mapRef="trail-composer-map"
+          :trails="trailList"
+          @updateDistanceTime="updateDistanceTime"
+          :draggable="true"
+          @updateMarkerLocation="updateMarkerLocation"
+          @updateCorrectedTrail="
+            (trail) => {
+              emit(`update:correctedTrailValue`, trail);
+            }
+          "
+        />
       </div>
       <v-divider></v-divider>
 
