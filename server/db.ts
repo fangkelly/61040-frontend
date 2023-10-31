@@ -1,4 +1,5 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
+console.log("here");
 
 const mongoUri = process.env.MONGO_SRV;
 if (!mongoUri) {

@@ -21,6 +21,8 @@ const deletePost = async () => {
 
 <template>
   <p class="author">{{ props.post.author }}</p>
+  <img v-if="post.media" :src="post.media.toString('base64')" />
+
   <p>{{ props.post.content }}</p>
   <div class="base">
     <menu v-if="props.post.author == currentUsername">
@@ -36,6 +38,10 @@ const deletePost = async () => {
 </template>
 
 <style scoped>
+img {
+  width: 100%;
+}
+
 p {
   margin: 0em;
 }
@@ -59,15 +65,5 @@ menu {
   justify-content: flex-end;
   font-size: 0.9em;
   font-style: italic;
-}
-
-.base {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.base article:only-child {
-  margin-left: auto;
 }
 </style>

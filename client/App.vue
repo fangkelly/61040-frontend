@@ -1,4 +1,5 @@
 <script setup lang="ts">
+console.log("hoorsu");
 import { useToastStore } from "@/stores/toast";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
@@ -13,6 +14,7 @@ const { toast } = storeToRefs(useToastStore());
 
 // Make sure to update the session before mounting the app in case the user is already logged in
 onBeforeMount(async () => {
+  console.log("mouting");
   try {
     await userStore.updateSession();
   } catch {

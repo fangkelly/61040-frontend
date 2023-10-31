@@ -1,8 +1,8 @@
+console.log("in main.ts");
 import "@/assets/main.css";
-import "purecss";
-
 import "@mdi/font/css/materialdesignicons.css";
 import "material-design-icons-iconfont/dist/material-design-icons.css";
+import "purecss";
 import VueMapboxTs from "vue-mapbox-ts";
 
 import { createPinia } from "pinia";
@@ -18,6 +18,8 @@ import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 import "vuetify/styles";
+
+console.log("in main.ts");
 
 const vuetify = createVuetify({
   components: { ...components, VDatePicker },

@@ -3,25 +3,20 @@ import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 
-export interface PostOptions {
-  location?: [number, number];
-  media?: Array<Blob>;
-}
-
 export interface PostDoc extends BaseDoc {
   author: ObjectId;
   content: string;
-  options?: PostOptions;
+  media?: string;
 }
 
 export default class PostConcept {
   public readonly posts = new DocCollection<PostDoc>("posts");
 
-  async create(author: ObjectId, content: string, options?: PostOptions) {
+  async create(author: ObjectId, content: string, media?: string) {
     if (!content) {
       throw new PostContentEmptyError();
     }
-    const _id = await this.posts.createOne({ author, content, options });
+    const _id = await this.posts.createOne({ author, content, media });
     return { msg: "Post successfully created!", post: await this.posts.readOne({ _id }) };
   }
 
@@ -30,6 +25,15 @@ export default class PostConcept {
       sort: { dateUpdated: -1 },
     });
     return posts;
+  }
+
+  async getById(id: ObjectId) {
+    return await this.posts.readOne(
+      { _id: id },
+      {
+        sort: { dateUpdated: -1 },
+      },
+    );
   }
 
   async getByAuthor(author: ObjectId) {

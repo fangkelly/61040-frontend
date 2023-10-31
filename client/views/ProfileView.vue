@@ -14,7 +14,7 @@ const username = currentUsername.value;
 const loaded = ref(false);
 
 let upcomingEvents = ref<Array<Record<string, string>>>([]);
-let pinnedTrails = ref<Array<Record<string, string>>>([]);
+// let pinnedTrails = ref<Array<Record<string, string>>>([]);
 let allTrails = ref<Array<Record<string, string>>>([]); // all of the user's trail TODO: use store to get this value
 let postValue = ref(-1); // index of post picked from map
 let trailValue = ref(); // id of trail picked from map
@@ -47,7 +47,7 @@ async function getAllTrails() {
     return;
   }
   allTrails.value = usersTrails;
-  pinnedTrails.value = usersTrails.filter((trail) => trail.pinned);
+  // pinnedTrails.value = usersTrails.filter((trail) => trail.pinned);
 }
 
 onBeforeMount(async () => {
@@ -81,7 +81,7 @@ onBeforeMount(async () => {
       </div>
     </section>
 
-    <section>
+    <!-- <section>
       <h3>Pinned Trails</h3>
       <div class="row">
         <article v-for="pinned in pinnedTrails" :key="pinned._id">
@@ -94,7 +94,7 @@ onBeforeMount(async () => {
           </v-sheet>
         </article>
       </div>
-    </section>
+    </section> -->
 
     <section>
       <h3>All Trails</h3>
@@ -116,7 +116,17 @@ onBeforeMount(async () => {
             }
           "
         />
-        <TrailPostComponent v-if="postValue > -1" :postIndex="postValue" :selectedTrail="selectedTrail" />
+        <TrailPostComponent
+          v-if="postValue > -1"
+          :postIndex="postValue"
+          :selectedTrail="selectedTrail"
+          @updatePostValue="
+            (v) => {
+              console.log('POST VALUE CHANGED ', v);
+              postValue = v;
+            }
+          "
+        />
       </div>
     </section>
   </main>
@@ -198,6 +208,6 @@ h3 {
 
 .map-container {
   position: relative;
-  height: 80vh;
+  height: 90vh;
 }
 </style>

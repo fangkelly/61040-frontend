@@ -1,17 +1,15 @@
 import { ObjectId } from "mongodb";
-
 import { Router, getExpressRouter } from "./framework/router";
 
 import { Comment, Event, Friend, Post, Trail, User, WebSession } from "./app";
 import { CommentDoc } from "./concepts/comment";
 import { NotFoundError } from "./concepts/errors";
 import { EventDoc } from "./concepts/event";
-import { PostDoc, PostOptions } from "./concepts/post";
+import { PostDoc } from "./concepts/post";
 import { TrailDoc } from "./concepts/trail";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
-
 class Routes {
   /** Session Routes */
   @Router.get("/session")
@@ -65,21 +63,26 @@ class Routes {
 
   /** Posts Routes */
   @Router.get("/posts")
-  async getPosts(author?: string) {
+  async getPosts(author?: string, id?: string) {
     let posts;
+    if (id) {
+      const post = await Post.getById(new ObjectId(id));
+      return { msg: "Sucessfully received post!", post: await Responses.post(post) };
+    }
+
     if (author) {
       const id = (await User.getUserByUsername(author))._id;
       posts = await Post.getByAuthor(id);
     } else {
       posts = await Post.getPosts({});
     }
-    return Responses.posts(posts);
+    return { msg: "Sucessfully received post!", post: await Responses.posts(posts) };
   }
 
   @Router.post("/posts")
-  async createPost(session: WebSessionDoc, content: string, options?: PostOptions) {
+  async createPost(session: WebSessionDoc, content: string, media?: string) {
     const user = WebSession.getUser(session);
-    const created = await Post.create(user, content, options);
+    const created = await Post.create(user, content, media);
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
@@ -311,10 +314,10 @@ class Routes {
 
   /** make post to an event only if the user is registered for it */
   @Router.patch("/events/:_id/post")
-  async postToEvent(session: WebSessionDoc, _id: ObjectId, text: string, options: PostOptions) {
+  async postToEvent(session: WebSessionDoc, _id: ObjectId, text: string, media?: string) {
     const user = WebSession.getUser(session);
     await Event.isRegistered(user, _id);
-    const created = await Post.create(user, text, options);
+    const created = await Post.create(user, text, media);
     return await Event.addPost(_id, created.post?._id);
   }
 
@@ -329,7 +332,6 @@ class Routes {
   /** Trails Routes */
   @Router.post("/trails")
   async createTrail(session: WebSessionDoc, body: { name: string; description: string; locations: Array<{ lat: number; lng: number; post?: ObjectId }>; duration: number; distance: number }) {
-    console.log("BODY ", body);
     const author = WebSession.getUser(session);
     const created = await Trail.create(author, body.name, body.description, body.locations, body.distance, body.duration);
     return { msg: created.msg, trail: await Responses.trail(created.trail) };
@@ -355,18 +357,12 @@ class Routes {
   }
 
   @Router.patch("/trails/:_id")
-  async updateTrail(session: WebSessionDoc, _id: ObjectId, update: Partial<TrailDoc>) {
+  async updateTrail(session: WebSessionDoc, _id: ObjectId, body: Partial<TrailDoc>) {
+    console.log("_id ", _id);
+    console.log("body ", body);
     const user = WebSession.getUser(session);
     await Trail.isAuthor(user, _id);
-    return await Trail.update(_id, update);
-  }
-
-  @Router.patch("/trails/:_id/pin")
-  async pinTrail(session: WebSessionDoc, _id: ObjectId) {
-    const user = WebSession.getUser(session);
-    await Trail.isAuthor(user, _id);
-    await Trail.checkAvailablePin(user);
-    return await Trail.update(_id, { pinned: true });
+    return await Trail.update(_id, body);
   }
 
   @Router.patch("/trails/:_id/unpin")
@@ -376,5 +372,4 @@ class Routes {
     return await Trail.update(_id, { pinned: false });
   }
 }
-
 export default getExpressRouter(new Routes());

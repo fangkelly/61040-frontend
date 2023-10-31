@@ -14,3 +14,5 @@ export const Friend = new FriendConcept();
 export const Event = new EventConcept();
 export const Comment = new CommentConcept();
 export const Trail = new TrailConcept();
+
+console.log("app suiccress");

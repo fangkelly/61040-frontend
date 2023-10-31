@@ -46,6 +46,7 @@
   "dependencies": {
     "@turf/bbox": "^6.5.0",
     "@turf/turf": "^6.5.0",
+    "browser-image-compression": "^2.0.2",
     "connect-mongo": "^5.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

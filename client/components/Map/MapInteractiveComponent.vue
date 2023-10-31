@@ -112,6 +112,16 @@ onUnmounted(() => {
 function flyTo(center) {
   map.flyTo({
     center: center,
+    zoom: 13,
+    essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+  });
+}
+
+function flyToPoint(lng, lat) {
+  const alteredLng = lng > 0 ? lng - 0.005 : lng + 0.005;
+  map.flyTo({
+    center: [alteredLng, lat],
+    zoom: 15,
     essential: true, // this animation is considered essential with respect to prefers-reduced-motion
   });
 }
@@ -147,6 +157,7 @@ function mapMarkers(trail) {
     el.onclick = () => {
       emit("updateTrailValue", trail._id);
       emit("updatePostValue", index);
+      flyToPoint(loc.lng, loc.lat);
     };
     //     el.innerHTML = `
     //     <span class="marker-label">${index + 1}</span>
