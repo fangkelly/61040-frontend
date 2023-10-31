@@ -252,7 +252,7 @@ async function mapTrail(trail) {
         }),
       );
     }
-    waypoints.map((waypoint) => {
+    directions.waypoints.map((waypoint) => {
       emit("updateMarkerLocation", { index: index, lng: waypoint.location[0], lat: waypoint.location[1] });
     });
 
@@ -277,6 +277,40 @@ onUnmounted(() => {
   map.remove();
   map = null;
 });
+
+function flyTo(center) {
+  map.flyTo({
+    center: center,
+    essential: true, // this animation is considered essential with respect to prefers-reduced-motion
+  });
+}
+
+function fitToBbox(geoObject) {
+  var bounds = turf.bbox(geoObject);
+  map.fitBounds([
+    [bounds[0], bounds[1]], // southwestern corner of the bounds
+    [bounds[2], bounds[3]], // northeastern corner of the bounds
+  ]);
+}
+
+function mapPoints(points) {
+  if (map.getLayer("waypoints")) {
+    map.getSource("waypoints").setData(points);
+  } else {
+    map.addLayer({
+      id: "waypoints",
+      type: "circle",
+      source: {
+        type: "geojson",
+        data: points,
+      },
+      paint: {
+        "circle-radius": 10,
+        "circle-color": "#E46363",
+      },
+    });
+  }
+}
 </script>
 
 <template>
