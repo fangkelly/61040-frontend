@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
-import { formatDate } from "@/utils/formatDate";
 import { storeToRefs } from "pinia";
 import { fetchy } from "../../utils/fetchy";
+import { formatDate } from "../../utils/formatDate";
 
 const props = defineProps(["comment"]);
 const emit = defineEmits(["refreshComments"]);
@@ -23,12 +23,14 @@ const deleteComment = async () => {
   <p>{{ props.comment.content }}</p>
   <div class="base">
     <menu v-if="props.comment.author == currentUsername">
-      <li><button class="button-error btn-small pure-button" @click="deleteComment">Delete</button></li>
+      <li>
+        <button class="button-error btn-small" @click="deleteComment"><v-icon>mdi-close</v-icon></button>
+      </li>
     </menu>
-    <article class="timestamp">
-      <p>Created on: {{ formatDate(props.comment.dateCreated) }}</p>
-    </article>
   </div>
+  <article class="timestamp">
+    <p>Created on: {{ formatDate(props.comment.dateCreated) }}</p>
+  </article>
 </template>
 
 <style scoped>
@@ -59,7 +61,7 @@ menu {
 
 .base {
   display: flex;
-  justify-content: space-between;
+  justify-content: end;
   align-items: center;
 }
 

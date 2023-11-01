@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import EventPreviewComponent from "@/components/Event/EventPreviewComponent.vue";
-import TrailPostComponent from "@/components/Post/TrailPostComponent.vue";
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";
-import { computed, onBeforeMount, ref } from "vue";
+import { onBeforeMount, ref } from "vue";
 import MapInteractiveComponent from "../components/Map/MapInteractiveComponent.vue";
 import { filterFutureDateTime, sortAscendingDateTime } from "../utils/formatDate";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
@@ -16,12 +15,6 @@ const loaded = ref(false);
 let upcomingEvents = ref<Array<Record<string, string>>>([]);
 // let pinnedTrails = ref<Array<Record<string, string>>>([]);
 let allTrails = ref<Array<Record<string, string>>>([]); // all of the user's trail TODO: use store to get this value
-let postValue = ref(-1); // index of post picked from map
-let trailValue = ref(); // id of trail picked from map
-
-const selectedTrail = computed(() => {
-  return allTrails.value.find((trail) => trail._id.toString() === trailValue.value.toString());
-});
 
 const accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
 
@@ -99,34 +92,7 @@ onBeforeMount(async () => {
     <section>
       <h3>All Trails</h3>
       <div class="map-container">
-        <MapInteractiveComponent
-          mapRef="profile-map-container"
-          :trails="allTrails"
-          :postValue="postValue"
-          :trailValue="trailValue"
-          @updatePostValue="
-            (v) => {
-              console.log('POST VALUE CHANGED ', v);
-              postValue = v;
-            }
-          "
-          @updateTrailValue="
-            (v) => {
-              trailValue = v;
-            }
-          "
-        />
-        <TrailPostComponent
-          v-if="postValue > -1"
-          :postIndex="postValue"
-          :selectedTrail="selectedTrail"
-          @updatePostValue="
-            (v) => {
-              console.log('POST VALUE CHANGED ', v);
-              postValue = v;
-            }
-          "
-        />
+        <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" />
       </div>
     </section>
   </main>
@@ -208,6 +174,6 @@ h3 {
 
 .map-container {
   position: relative;
-  height: 90vh;
+  height: 95vh;
 }
 </style>

@@ -1,36 +1,22 @@
 <script setup lang="ts">
 import mapboxgl from "mapbox-gl";
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, ref, watch } from "vue";
 import { useToastStore } from "../../stores/toast";
+import { fetchy } from "../../utils/fetchy";
+import CreatePostForm from "../Post/CreatePostForm.vue";
+import PostComponent from "../Post/PostComponent.vue";
 mapboxgl.accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
-
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
 
-const props = defineProps(["trails", "mapRef", "trailValue", "postValue"]);
-const emit = defineEmits(["updateTrailValue", "updatePostValue"]);
+const props = defineProps(["trails", "mapRef"]);
 
 // TODO: compute center and bounding box to capture ALL points -- set it in mount?
 let { lng, lat, bearing, pitch, zoom } = { lng: -158.124, lat: 21.431, bearing: 0, pitch: 60, zoom: 12 };
 
 let map;
-
-// watch(
-//   props.postValue.value,
-//   (newPost, oldPost) => {
-//     console.log("IN WATCH");
-//     if (!newPost) {
-//       // zoom out
-//     } else {
-//       // find post in trail
-//       const loc = props.trails.find((trail) => {
-//         trail._id === props.trailValue;
-//       });
-
-//       flyTo({ lat: loc.lat, lng: loc.lng });
-//     }
-//   },
-//   { immediate: true },
-// );
+let selectedTrailId = ref();
+let selectedPostId = ref();
+let showCard = ref(false);
 
 onMounted(() => {
   map = new mapboxgl.Map({
@@ -94,6 +80,7 @@ onMounted(() => {
   });
 
   map.on("load", async function () {
+    map.resize();
     const trailPromises = props.trails.map(async (trail) => {
       return await mapTrail(trail);
     });
@@ -155,8 +142,9 @@ function mapMarkers(trail) {
     el.className = "marker";
     el.id = `marker-${trail._id}-${loc.post}`;
     el.onclick = () => {
-      emit("updateTrailValue", trail._id);
-      emit("updatePostValue", index);
+      selectedTrailId.value = trail._id;
+      selectedPostId.value = loc.post;
+      showCard.value = true;
       flyToPoint(loc.lng, loc.lat);
     };
     //     el.innerHTML = `
@@ -222,16 +210,92 @@ async function mapTrail(trail) {
     mapRoute(trail, routes[0].geometry.coordinates);
   }
 }
+
+let post = ref();
+let trail = ref();
+
+watch(selectedTrailId, async (newId, oldId) => {
+  trail.value = props.trails.find((t) => t._id === newId);
+});
+
+watch(selectedPostId, async (newId, oldId) => {
+  if (newId) {
+    const postResponse = await fetchy(`/api/posts/`, "GET", { query: { id: newId.toString() } });
+    post.value = postResponse.post;
+  } else {
+    post.value = undefined;
+  }
+});
+
+function getCoordinates(trail) {
+  console.log("trail ", trail, selectedPostId.value);
+  const coords = trail.locations.find((loc) => {
+    return loc.post === selectedPostId.value;
+  });
+
+  console.log("coords ", coords);
+
+  return `(${coords.lng}, ${coords.lat})`;
+}
+
+function closeForm() {
+  showCard.value = false;
+}
+
+/** functions for getting post from selected point */
 </script>
 
 <template>
-  <div :id="props.mapRef" class="map-container"></div>
-</template>
+  <div :id="props.mapRef" class="mapContainer"></div>
+  <v-sheet v-if="showCard" rounded class="post-sheet">
+    <div v-if="trail">
+      <div class="row">
+        <h3>{{ trail.name }}</h3>
+        <v-icon @click="closeForm">mdi-close</v-icon>
+      </div>
 
-<style>
-.map-container {
+      <!-- TODO: clicking on author takes them to their profile -->
+
+      <!-- <h4>{{ trail.author }}</h4> -->
+      <h6>{{ trail.distance }} miles</h6>
+      <h6>{{ trail.duration }} hours</h6>
+      <h6>{{ getCoordinates(trail) }}</h6>
+    </div>
+    <PostComponent v-if="post" :post="post" />
+    <div v-else class="gap">
+      <CreatePostForm />
+      <div class="center background">No post found for this location!</div>
+    </div>
+  </v-sheet>
+</template>
+this.map.resize();
+<style scoped>
+.center {
+  align-items: center;
+  justify-content: center;
+}
+.background {
+  background-color: #95b08d24;
+  border-radius: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 1em;
+}
+.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: start;
+}
+.mapContainer {
   height: 100%;
-  position: absolute;
+}
+
+.gap {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
 }
 
 .marker {
@@ -243,5 +307,19 @@ async function mapTrail(trail) {
   justify-content: center;
   align-items: center;
   color: white;
+}
+
+.post-sheet {
+  display: flex;
+  flex-direction: column;
+  row-gap: 1.5em;
+  position: absolute;
+  top: 2em;
+  right: 2em;
+  padding: 1em;
+  width: 40%;
+  height: calc(100% - 4em);
+  overflow-y: scroll;
+  background-color: #ffffffe9;
 }
 </style>

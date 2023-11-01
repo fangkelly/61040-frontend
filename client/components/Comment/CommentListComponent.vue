@@ -32,7 +32,6 @@ onBeforeMount(async () => {
 
 <template>
   <section v-if="isLoggedIn">
-    <p>Add a comment:</p>
     <CreateCommentForm @getComments="getComments" @refreshComments="getComments" :target="props.target" />
   </section>
   <section class="comments" v-if="loaded && comments.length !== 0">
@@ -40,7 +39,7 @@ onBeforeMount(async () => {
       <CommentComponent :comment="comment" @refreshComments="getComments" />
     </article>
   </section>
-  <p v-else-if="loaded">No comments found</p>
+  <article v-else-if="loaded" class="center"><p>No comments found</p></article>
   <p v-else>Loading...</p>
 </template>
 
@@ -54,20 +53,20 @@ section {
 section,
 p,
 .row {
-  margin: 0 auto;
   max-width: 60em;
 }
 
+.center {
+  align-items: center;
+  justify-content: center;
+}
+
 article {
-  background-color: var(--base-bg);
+  background-color: #95b08d24;
   border-radius: 1em;
   display: flex;
   flex-direction: column;
   gap: 0.5em;
-  padding: 1em;
-}
-
-.comments {
   padding: 1em;
 }
 

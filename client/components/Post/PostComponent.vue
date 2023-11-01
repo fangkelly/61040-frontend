@@ -20,24 +20,51 @@ const deletePost = async () => {
 </script>
 
 <template>
-  <p class="author">{{ props.post.author }}</p>
-  <img v-if="post.media" :src="post.media.toString('base64')" />
+  <div class="post-container">
+    <div class="background">
+      <p class="author">{{ props.post.author }}</p>
+      <img v-if="post.media" :src="post.media.toString('base64')" />
 
-  <p>{{ props.post.content }}</p>
-  <div class="base">
-    <menu v-if="props.post.author == currentUsername">
-      <li><button class="btn-small pure-button" @click="emit('editPost', props.post._id)">Edit</button></li>
-      <li><button class="button-error btn-small pure-button" @click="deletePost">Delete</button></li>
-    </menu>
-    <article class="timestamp">
-      <p v-if="props.post.dateCreated !== props.post.dateUpdated">Edited on: {{ formatDate(props.post.dateUpdated) }}</p>
-      <p v-else>Created on: {{ formatDate(props.post.dateCreated) }}</p>
-    </article>
+      <p>{{ props.post.content }}</p>
+      <div class="base">
+        <menu v-if="props.post.author == currentUsername">
+          <li>
+            <button class="btn-small" @click="emit('editPost', props.post._id)"><v-icon>mdi-pencil</v-icon></button>
+          </li>
+          <li>
+            <button class="button-error btn-small" @click="deletePost"><v-icon>mdi-close</v-icon></button>
+          </li>
+        </menu>
+        <article class="timestamp">
+          <p v-if="props.post.dateCreated !== props.post.dateUpdated">Edited on: {{ formatDate(props.post.dateUpdated) }}</p>
+          <p v-else>Created on: {{ formatDate(props.post.dateCreated) }}</p>
+        </article>
+      </div>
+    </div>
+    <v-divider class="divider"></v-divider>
+    <CommentListComponent :target="props.post._id" />
   </div>
-  <CommentListComponent :target="props.post._id" />
 </template>
 
 <style scoped>
+.post-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.divider {
+  padding: 0 1em;
+}
+.background {
+  background-color: #95b08d24;
+  border-radius: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+  padding: 1em;
+}
+
 img {
   width: 100%;
 }
@@ -58,6 +85,7 @@ menu {
   gap: 1em;
   padding: 0;
   margin: 0;
+  justify-content: end;
 }
 
 .timestamp {

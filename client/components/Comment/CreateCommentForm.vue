@@ -25,20 +25,26 @@ const emptyForm = () => {
 
 <template>
   <form @submit.prevent="createComment(content, props.target)">
-    <label for="content">Comment Contents:</label>
-    <textarea id="content" v-model="content" placeholder="Create a comment!" required> </textarea>
-    <button type="submit" class="pure-button-primary pure-button">Create Comment</button>
+    <v-textarea id="content" color="#95b08d" variant="outlined" v-model="content" placeholder="Create a comment!" required hide-details> </v-textarea>
+    <div class="right-align"><button type="submit">Create Comment</button></div>
   </form>
 </template>
 
 <style scoped>
+.right-align {
+  display: flex;
+  flex-direction: row;
+  justify-content: end;
+}
+
 form {
-  background-color: var(--base-bg);
+  background-color: #95b08d24;
   border-radius: 1em;
   display: flex;
   flex-direction: column;
   gap: 0.5em;
   padding: 1em;
+  width: 100%;
 }
 
 textarea {
@@ -48,5 +54,26 @@ textarea {
   padding: 0.5em;
   border-radius: 4px;
   resize: none;
+}
+
+button {
+  border: 1px solid #6d6d6d;
+  color: #6d6d6d;
+  font-size: 12px;
+  font-weight: 100;
+  cursor: pointer;
+  border-radius: 30px;
+  transition: all 0.25s ease-in;
+  padding: 0.5em 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: 0.25em;
+}
+
+button:hover {
+  background-color: #95b08d;
+  color: white;
+  border: 1px solid white;
 }
 </style>
