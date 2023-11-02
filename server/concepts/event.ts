@@ -14,7 +14,7 @@ export interface EventDoc extends BaseDoc {
     terrain: Array<string>;
     activity: Array<string>;
     other: Array<string>;
-    difficulty: string;
+    difficulty: Array<string>;
   };
   checklist: Array<Record<string, number>>;
   posts: Array<ObjectId>;
@@ -32,7 +32,7 @@ export interface Event {
     terrain: Array<string>;
     activity: Array<string>;
     other: Array<string>;
-    difficulty: string;
+    difficulty: Array<string>;
   };
   checklist: Array<Record<string, number>>;
   posts: Array<ObjectId>;

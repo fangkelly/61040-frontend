@@ -1,5 +1,4 @@
 <script setup lang="ts">
-console.log("hoorsu");
 import { useToastStore } from "@/stores/toast";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
@@ -14,7 +13,6 @@ const { toast } = storeToRefs(useToastStore());
 
 // Make sure to update the session before mounting the app in case the user is already logged in
 onBeforeMount(async () => {
-  console.log("mouting");
   try {
     await userStore.updateSession();
   } catch {
@@ -36,6 +34,11 @@ onBeforeMount(async () => {
         <ul>
           <li>
             <RouterLink :to="{ name: 'Home' }" :class="{ underline: currentRouteName == 'Home', link: true }"> Home </RouterLink>
+          </li>
+
+          <!-- TODO: Remove EVENT REOUTE WHEN DONE TESTING! -->
+          <li>
+            <RouterLink :to="{ name: 'Event' }" :class="{ underline: currentRouteName == 'Event', link: true }"> Event </RouterLink>
           </li>
           <li v-if="isLoggedIn">
             <RouterLink :to="{ name: 'Profile' }" :class="{ underline: currentRouteName == 'Profile', link: true }"> Profile </RouterLink>
@@ -67,6 +70,9 @@ nav {
 }
 
 #app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   /* background-color: #95b08d; */
 }
 

@@ -35,3 +35,14 @@ a.button {
   min-height: 100vh;
 }
 
+.marker {
+  border-radius: 50%;
+  height: 20px;
+  width: 20px;
+  background-color: #e46363;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+}
+

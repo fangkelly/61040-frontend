@@ -25,7 +25,7 @@ const emptyForm = () => {
 
 <template>
   <form @submit.prevent="createComment(content, props.target)">
-    <v-textarea id="content" color="#95b08d" variant="outlined" v-model="content" placeholder="Create a comment!" required hide-details> </v-textarea>
+    <v-textarea id="content" color="#95b08d" variant="outlined" v-model="content" placeholder="Create a comment!" required hide-details rows="1"> </v-textarea>
     <div class="right-align"><button type="submit">Create Comment</button></div>
   </form>
 </template>

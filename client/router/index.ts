@@ -2,6 +2,7 @@ import { storeToRefs } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 
 import { useUserStore } from "@/stores/user";
+import EventView from "../views/EventView.vue";
 import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
@@ -20,6 +21,12 @@ const router = createRouter({
       path: "/profile",
       name: "Profile",
       component: ProfileView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/event",
+      name: "Event",
+      component: EventView,
       meta: { requiresAuth: true },
     },
     {

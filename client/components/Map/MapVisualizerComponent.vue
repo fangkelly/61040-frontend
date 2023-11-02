@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useToastStore } from "@/stores/toast";
-import * as turf from "@turf/turf";
 import mapboxgl from "mapbox-gl";
 import { onMounted, onUnmounted, onUpdated, ref } from "vue";
 mapboxgl.accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
@@ -111,18 +110,20 @@ function mapMarkers(locations) {
   `;
     const marker = new mapboxgl.Marker({
       element: el,
-      draggable: true,
+      draggable: props.draggable,
     })
 
       .setLngLat(loc)
       .addTo(map);
 
-    function onDragEnd() {
-      const lngLat = marker.getLngLat();
-      emit("updateMarkerLocation", { index: index, lng: lngLat.lng, lat: lngLat.lat });
-    }
+    if (props.draggable) {
+      function onDragEnd() {
+        const lngLat = marker.getLngLat();
+        emit("updateMarkerLocation", { index: index, lng: lngLat.lng, lat: lngLat.lat });
+      }
 
-    marker.on("dragend", onDragEnd);
+      marker.on("dragend", onDragEnd);
+    }
 
     currentMarkers.value = [...currentMarkers.value, marker];
   }
@@ -210,27 +211,11 @@ async function mapTrail(trail) {
 
     const locations = sanitizedTrail.locations;
     const center = [locations[0].lng, locations[0].lat];
-    points = {
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: {},
-          geometry: {
-            type: "Point",
-            coordinates: center,
-          },
-        },
-      ],
-    };
 
     emit("updateCorrectedTrail", trail.locations);
 
-    if (props.draggable) {
-      clearAllMarkers();
-      mapMarkers(locations);
-    }
-    mapPoints(points);
+    clearAllMarkers();
+    mapMarkers(locations);
     flyTo(center);
   } else {
     const directions = await getDirections(sanitizedTrail);
@@ -252,14 +237,6 @@ async function mapTrail(trail) {
     };
     points = waypoints;
 
-    if (props.draggable) {
-      clearAllMarkers();
-      mapMarkers(
-        directions.waypoints.map((waypoint) => {
-          return waypoint.location;
-        }),
-      );
-    }
     const correctedTrail = directions.waypoints.map((w) => {
       const loc = w.location;
       return { lat: loc[1], lng: loc[0] };
@@ -267,8 +244,14 @@ async function mapTrail(trail) {
 
     emit("updateCorrectedTrail", correctedTrail);
 
-    mapPoints(points);
-    fitToBbox(points);
+    clearAllMarkers();
+    mapMarkers(
+      directions.waypoints.map((waypoint) => {
+        return waypoint.location;
+      }),
+    );
+
+    fitToBbox(correctedTrail);
   }
 }
 
@@ -296,31 +279,34 @@ function flyTo(center) {
   });
 }
 
-function fitToBbox(geoObject) {
-  var bounds = turf.bbox(geoObject);
-  map.fitBounds([
-    [bounds[0], bounds[1]], // southwestern corner of the bounds
-    [bounds[2], bounds[3]], // northeastern corner of the bounds
-  ]);
-}
+function fitToBbox(points) {
+  var coordinates = points;
 
-function mapPoints(points) {
-  if (map.getLayer("waypoints")) {
-    map.getSource("waypoints").setData(points);
-  } else {
-    map.addLayer({
-      id: "waypoints",
-      type: "circle",
-      source: {
-        type: "geojson",
-        data: points,
-      },
-      paint: {
-        "circle-radius": 10,
-        "circle-color": "#E46363",
-      },
-    });
-  }
+  var bounds = coordinates.reduce(
+    function (bounds, coord) {
+      return bounds.extend(coord);
+    },
+    new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
+  );
+
+  map.fitBounds(bounds, {
+    padding: { top: 50, bottom: 50, left: 50, right: 50 },
+    easing(t) {
+      return t * (2 - t);
+    },
+  });
+
+  // console.log(geoObject);
+  // var bounds = turf.bbox(geoObject);
+  // console.log("bounds ", bounds);
+  // try {
+  //   map.fitBounds([
+  //     [bounds[0], bounds[1]], // southwestern corner of the bounds
+  //     [bounds[2], bounds[3]], // northeastern corner of the bounds
+  //   ]);
+  // } catch (e) {
+  //   console.log("error fitting bounds");
+  // }
 }
 
 function clearMap() {
@@ -340,20 +326,9 @@ function clearMap() {
   <div :id="props.mapRef" class="map-container"></div>
 </template>
 
-<style>
+<style scoped>
 .map-container {
   height: 100%;
   position: absolute;
-}
-
-.marker {
-  border-radius: 50%;
-  height: 20px;
-  width: 20px;
-  background-color: #e46363;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
 }
 </style>

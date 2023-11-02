@@ -8,7 +8,7 @@ import { fetchy } from "../../utils/fetchy";
 const props = defineProps(["trails"]);
 
 /** optional tags and the associated refs for storing them */
-const difficultyTags = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
+const difficultyTags = ["Beginner", "Intermediate", "Expert", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
 let difficulty = ref();
 
 const activityTags = ["Camping", "Running", "Climbing", "Fishing", "Swimming", "Backpacking", "Biking", "Ski", "Ice Climbing"];
@@ -156,6 +156,8 @@ const createEvent = async () => {
     useToastStore().showToast({ message: trailResponse.message, style: trailResponse.ok ? "success" : "error" });
   }
 
+  console.log("dateTime ", date);
+
   const dateTime = date.value.split("T");
   const dateArray = dateTime[0].split("-");
   const year = dateArray[0];
@@ -184,7 +186,7 @@ const createEvent = async () => {
     date: sanitizedDate,
     time: sanitizedTime,
     tags: {
-      difficulty: difficulty.value,
+      difficulty: JSON.parse(JSON.stringify(difficulty.value)),
       activity: JSON.parse(JSON.stringify(activity.value)),
       terrain: JSON.parse(JSON.stringify(terrain.value)),
       other: JSON.parse(JSON.stringify(other.value)),
@@ -200,7 +202,7 @@ const createEvent = async () => {
 };
 
 const emptyForm = () => {
-  difficulty.value = "";
+  difficulty.value = [];
   terrain.value = [];
   activity.value = [];
   other.value = [];
@@ -258,7 +260,7 @@ function toggleForm() {
           <v-col>
             <div class="section">
               <h4>Tags</h4>
-              <v-select v-model="difficulty" :items="difficultyTags" label="Level of Difficulty" color="#95b08d" variant="outlined"></v-select>
+              <v-select v-model="difficulty" :items="difficultyTags" label="Level of Difficulty" multiple color="#95b08d" variant="outlined"></v-select>
               <v-select v-model="terrain" :items="terrainTags" chips label="Terrain" multiple color="#95b08d" variant="outlined"></v-select>
               <v-select v-model="activity" :items="activityTags" chips label="Activity" multiple color="#95b08d" variant="outlined"></v-select>
               <v-select v-model="other" :items="otherTags" chips label="Other" multiple color="#95b08d" variant="outlined"></v-select>

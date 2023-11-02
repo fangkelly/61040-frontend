@@ -43,10 +43,7 @@ onBeforeMount(async () => {
       </section>
     </section>
 
-    <section>
-      <!-- <div v-if="mapView"><MapVisualizerComponent mapRef="home-map-container" /></div> -->
-      <!-- <div v-else><PostListComponent /></div> -->
-    </section>
+    <!-- <div v-if="mapView"><MapInteractiveComponent mapRef="home-map-container" /></div> -->
   </main>
 </template>
 

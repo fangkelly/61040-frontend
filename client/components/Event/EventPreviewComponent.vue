@@ -62,10 +62,6 @@ const unregisterEvent = async () => {
 
   registered.value = false;
 };
-
-const viewDetails = () => {
-  // TODO: navigate to event info page;
-};
 </script>
 
 <template>
@@ -84,7 +80,7 @@ const viewDetails = () => {
       <div class="row">
         <button v-if="registered" @click="unregisterEvent">Unregister</button>
         <button v-else @click="registerEvent">Register</button>
-        <button @click="viewDetails">View Details</button>
+        <button>View Details</button>
       </div>
       <div class="row">
         <article v-for="attendee in attendees.slice(0, 3)" :key="attendee._id">

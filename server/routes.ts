@@ -199,10 +199,12 @@ class Routes {
   }
 
   @Router.get("/events")
-  async getEvents(owner?: string) {
+  async getEvents(query: Partial<EventDoc>) {
     let events;
-    if (owner) {
-      const id = (await User.getUserByUsername(owner))._id;
+    if (query._id) {
+      events = await Event.getEvents({ _id: query._id });
+    } else if (query.owner) {
+      const id = (await User.getUserByUsername(query.owner.toString()))._id;
       events = await Event.getByOwner(id);
     } else {
       events = await Event.getEvents({});
@@ -264,7 +266,7 @@ class Routes {
         terrain: Array<string>;
         activity: Array<string>;
         other: Array<string>;
-        difficulty: string;
+        difficulty: Array<string>;
       };
       checklist: Array<Record<string, number>>;
       trail: ObjectId;
@@ -314,19 +316,20 @@ class Routes {
 
   /** make post to an event only if the user is registered for it */
   @Router.patch("/events/:_id/post")
-  async postToEvent(session: WebSessionDoc, _id: ObjectId, text: string, media?: string) {
+  async postToEvent(session: WebSessionDoc, _id: ObjectId, body: { content: string; media?: string }) {
     const user = WebSession.getUser(session);
     await Event.isRegistered(user, _id);
-    const created = await Post.create(user, text, media);
-    return await Event.addPost(_id, created.post?._id);
+    const created = await Post.create(user, body.content, body.media);
+    await Event.addPost(_id, created.post?._id);
+    return await Responses.post(created.post);
   }
 
   /** delete post from an event */
   @Router.patch("/events/:_id/delete_post/:_postId")
-  async DeleteFromEvent(session: WebSessionDoc, _id: ObjectId, postId: ObjectId) {
+  async DeleteFromEvent(session: WebSessionDoc, _id: ObjectId, _postId: ObjectId) {
     const user = WebSession.getUser(session);
-    await Post.isAuthor(user, postId);
-    return await Event.deletePost(_id, postId);
+    await Post.isAuthor(user, _postId);
+    return await Event.deletePost(_id, _postId);
   }
 
   /** Trails Routes */
@@ -344,12 +347,18 @@ class Routes {
     return Trail.delete(_id);
   }
 
-  @Router.get("/trails")
-  async getTrails(author?: string) {
+  @Router.get("/trails/")
+  async getTrails(query: { author: string; _id: string }) {
     let trails;
-    if (author) {
-      const id = (await User.getUserByUsername(author))._id;
-      trails = await Trail.getTrailsByAuthor(id);
+    if (query) {
+      if (query._id) {
+        trails = await Trail.getTrails({ _id: new ObjectId(query._id) });
+      }
+
+      if (query.author) {
+        const user = await User.getUserByUsername(query.author);
+        trails = await Trail.getTrailsByAuthor(user._id);
+      }
     } else {
       trails = await Trail.getTrails({});
     }

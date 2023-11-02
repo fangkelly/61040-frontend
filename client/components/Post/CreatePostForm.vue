@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import imageCompression from "browser-image-compression";
 import { onMounted, ref } from "vue";
-import { fetchy } from "../../utils/fetchy";
 
 let content = ref("");
 let media = ref();
 let mediaStream = ref();
 
-const emit = defineEmits(["refreshPosts"]);
+const emit = defineEmits(["handleCreatePost"]);
 
 const rules = [
   (v) => {
@@ -15,23 +14,6 @@ const rules = [
     return "Content cannot be empty for a post!";
   },
 ];
-
-const createPost = async (content: string, media: string) => {
-  try {
-    const res = await fetchy("/api/posts", "POST", {
-      body: { content, media },
-    });
-
-    const postId = res.post._id;
-    emit("updatePost", postId);
-
-    // add association of post to trail
-
-    emptyForm();
-  } catch (_) {
-    return;
-  }
-};
 
 const emptyForm = () => {
   content.value = "";
@@ -95,10 +77,15 @@ const handleUploadImage = (files) => {
     console.log("could not process image");
   }
 };
+
+const createPost = (content: string, media: string) => {
+  emit(`handleCreatePost`, content, media);
+  emptyForm();
+};
 </script>
 
 <template>
-  <form @submit.prevent="createPost(content, media)" class="trail-post-form background">
+  <form @submit.prevent="createPost(content, media)" class="trail-post-form">
     <img v-if="media" :src="media.toString('base64')" />
     <v-file-input
       v-model="mediaStream"
@@ -111,18 +98,12 @@ const handleUploadImage = (files) => {
       hide-details
     ></v-file-input>
 
-    <v-textarea v-model="content" class="trailPost-form" variant="outlined" color="#95b08d" required label="Create a post!" :rules="rules"></v-textarea>
+    <v-textarea v-model="content" class="trailPost-form" variant="outlined" color="#95b08d" required label="Create a post!" :rules="rules" rows="2"></v-textarea>
     <div class="button-container"><button type="submit">Submit post</button></div>
   </form>
 </template>
 
 <style scoped>
-.trail-post-form {
-  display: flex;
-  flex-direction: column;
-  row-gap: 2em;
-}
-
 button {
   border: 1px solid #474747;
   color: #474747;
@@ -144,12 +125,12 @@ button {
   justify-content: flex-end;
 }
 
-.background {
+.trail-post-form {
   background-color: #95b08d24;
   border-radius: 1em;
   display: flex;
   flex-direction: column;
-  gap: 1em;
+  row-gap: 1.5em;
   padding: 1em;
 }
 </style>

@@ -8,31 +8,33 @@ import MapInteractiveComponent from "../components/Map/MapInteractiveComponent.v
 import { filterFutureDateTime, sortAscendingDateTime } from "../utils/formatDate";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 
-const username = currentUsername.value;
-
+const props = defineProps(["username"]);
+const username = "kfang";
 const loaded = ref(false);
 
-let upcomingEvents = ref<Array<Record<string, string>>>([]);
+let upcomingEvents = ref([]);
 // let pinnedTrails = ref<Array<Record<string, string>>>([]);
 let allTrails = ref<Array<Record<string, string>>>([]); // all of the user's trail TODO: use store to get this value
 
-const accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
-
 async function getUpcomingEvents() {
+  console.log("in get upcoming events");
   let registeredEvents;
   try {
-    registeredEvents = await fetchy(`api/events/registered`, "GET", { query: { user: username } });
+    console.log("here");
+    registeredEvents = await fetchy(`/api/events/registered`, "GET", { query: { user: username } });
+    console.log("registeredEvents ", registeredEvents);
   } catch (_) {
     return;
   }
 
-  // TODO: filter registeredEvents for those that are occuring in the future (ie. do not display past events)
   const sortedRegisteredEvents = sortAscendingDateTime(registeredEvents);
   const futureRegisteredEvents = filterFutureDateTime(sortedRegisteredEvents);
   upcomingEvents.value = futureRegisteredEvents;
+  console.log("upcoming events ", futureRegisteredEvents);
 }
 
 async function getAllTrails() {
+  console.log("getAllTrails");
   let usersTrails;
   try {
     usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: username } });
@@ -40,14 +42,66 @@ async function getAllTrails() {
     return;
   }
   allTrails.value = usersTrails;
+  console.log("allTrails ", usersTrails);
+
   // pinnedTrails.value = usersTrails.filter((trail) => trail.pinned);
 }
 
 onBeforeMount(async () => {
+  console.log("onBeforeMount");
   await getUpcomingEvents();
   await getAllTrails();
   loaded.value = true;
 });
+
+function updateTrailWithPost(trailId: string, postIndex: number, newLocations: Array<{ lat: number; lng: number; post?: string }>) {
+  console.log("in updateTrailWithPost");
+
+  // find index of the trail to update
+  const trailIndex = allTrails.value.findIndex((t) => t._id.toString() === trailId.toString());
+
+  console.log("postIndex", postIndex);
+  // get the trail to update
+  let updatedTrail = allTrails.value[trailIndex];
+  console.log("trailIndex ", trailIndex);
+  console.log("updatedTrail ", updatedTrail);
+  console.log("new locations ", newLocations);
+
+  // change the location of the trail
+  updatedTrail.locations = newLocations;
+
+  // copy of all the trails
+  const newTrails = [...allTrails.value];
+
+  // replace the trail with the new trail
+  newTrails.splice(trailIndex, 1, updatedTrail);
+  console.log("newTrails ", newTrails);
+  allTrails.value = newTrails;
+}
+
+function updateTrailWithoutPost(trailId, postIndex) {
+  // find index of the trail to update
+  const trailIndex = allTrails.value.findIndex((t) => t._id.toString() === trailId.toString());
+
+  // get the trail to update
+  let updatedTrail = allTrails.value[trailIndex];
+  console.log("updatedTrail ", updatedTrail);
+
+  // get the location of the trail
+  const location = updatedTrail.locations[postIndex];
+  console.log("location ", location);
+
+  // update the post of the location to undefined
+  location.post = undefined;
+
+  // copy of all the trails
+  const newTrails = [...allTrails.value];
+
+  // replace the trail with the new trail
+  newTrails.splice(trailIndex, 1, updatedTrail);
+  console.log("newTrails ", newTrails);
+  allTrails.value = newTrails;
+}
 </script>
 
 <template>
@@ -57,7 +111,7 @@ onBeforeMount(async () => {
         <img id="avatar-img" src="https://via.placeholder.com/100x100/cf5" />
         <!-- <input type="file" /> -->
       </div>
-      <h1>{{ currentUsername }}</h1>
+      <h1>{{ username }}</h1>
     </section>
 
     <section>
@@ -92,7 +146,7 @@ onBeforeMount(async () => {
     <section>
       <h3>All Trails</h3>
       <div class="map-container">
-        <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" />
+        <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" @updateTrailWithPost="updateTrailWithPost" @updateTrailWithoutPost="updateTrailWithoutPost" />
       </div>
     </section>
   </main>

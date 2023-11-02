@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import mapboxgl from "mapbox-gl";
-import { onMounted, onUnmounted, ref, watch } from "vue";
+import { onMounted, onUnmounted, onUpdated, ref, watch } from "vue";
 import { useToastStore } from "../../stores/toast";
 import { fetchy } from "../../utils/fetchy";
 import CreatePostForm from "../Post/CreatePostForm.vue";
@@ -9,6 +9,8 @@ mapboxgl.accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sO
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
 
 const props = defineProps(["trails", "mapRef"]);
+const emit = defineEmits(["updateTrailWithPost", "updateTrailWithoutPost"]);
+const loading = ref(false);
 
 // TODO: compute center and bounding box to capture ALL points -- set it in mount?
 let { lng, lat, bearing, pitch, zoom } = { lng: -158.124, lat: 21.431, bearing: 0, pitch: 60, zoom: 12 };
@@ -17,6 +19,45 @@ let map;
 let selectedTrailId = ref();
 let selectedPostId = ref();
 let showCard = ref(false);
+
+let selected = ref({ trailId: null, postIndex: null });
+let post = ref();
+let trail = ref();
+
+async function getPost(postId) {
+  loading.value = true;
+  if (postId) {
+    console.log("postId ", postId);
+    const postResponse = await fetchy(`/api/posts/`, "GET", { query: { id: postId } });
+
+    post.value = postResponse.post;
+    console.log("post.value ", post.value);
+  } else {
+    post.value = undefined;
+  }
+
+  loading.value = false;
+}
+
+watch(selected, async (newSelected, oldSelected) => {
+  const trailId = newSelected.trailId;
+  const postIndex = newSelected.postIndex;
+
+  const selectedTrail = props.trails.find((t) => t._id === trailId);
+  trail.value = selectedTrail;
+
+  console.log("postindex ", postIndex);
+  console.log(selectedTrail.locations[postIndex]);
+
+  const postId = selectedTrail.locations[postIndex].post;
+  await getPost(postId);
+
+  loading.value = false;
+});
+
+onUpdated(() => {
+  console.log("tonUPDATED trails ", props.trails);
+});
 
 onMounted(() => {
   map = new mapboxgl.Map({
@@ -113,12 +154,22 @@ function flyToPoint(lng, lat) {
   });
 }
 
-function fitToBbox(geoObject) {
-  var bounds = turf.bbox(geoObject);
-  map.fitBounds([
-    [bounds[0], bounds[1]], // southwestern corner of the bounds
-    [bounds[2], bounds[3]], // northeastern corner of the bounds
-  ]);
+function fitToBbox(points) {
+  var coordinates = points;
+
+  var bounds = coordinates.reduce(
+    function (bounds, coord) {
+      return bounds.extend(coord);
+    },
+    new mapboxgl.LngLatBounds(coordinates[0], coordinates[0]),
+  );
+
+  map.fitBounds(bounds, {
+    padding: { top: 50, bottom: 50, left: 50, right: 50 },
+    easing(t) {
+      return t * (2 - t);
+    },
+  });
 }
 
 async function getDirections(trail) {
@@ -142,9 +193,12 @@ function mapMarkers(trail) {
     el.className = "marker";
     el.id = `marker-${trail._id}-${loc.post}`;
     el.onclick = () => {
-      selectedTrailId.value = trail._id;
-      selectedPostId.value = loc.post;
       showCard.value = true;
+      loading.value = true;
+      selected.value = {
+        trailId: trail._id,
+        postIndex: index,
+      };
       flyToPoint(loc.lng, loc.lat);
     };
     //     el.innerHTML = `
@@ -186,14 +240,10 @@ function mapRoute(trail, route) {
       "line-opacity": 0.75,
     },
   });
-
-  //   map.on("click", layerId, (e) => {
-  //     emit("updateTrailValue", trail._id);
-  //     emit("updatePostValue", -1);
-  //   });
 }
 
 async function mapTrail(trail) {
+  console.log("mapping trail ", trail);
   let points;
 
   // if trail has no points
@@ -211,62 +261,96 @@ async function mapTrail(trail) {
   }
 }
 
-let post = ref();
-let trail = ref();
-
-watch(selectedTrailId, async (newId, oldId) => {
-  trail.value = props.trails.find((t) => t._id === newId);
-});
-
-watch(selectedPostId, async (newId, oldId) => {
-  if (newId) {
-    const postResponse = await fetchy(`/api/posts/`, "GET", { query: { id: newId.toString() } });
-    post.value = postResponse.post;
-  } else {
-    post.value = undefined;
-  }
-});
-
 function getCoordinates(trail) {
-  console.log("trail ", trail, selectedPostId.value);
-  const coords = trail.locations.find((loc) => {
-    return loc.post === selectedPostId.value;
-  });
+  console.log("trail ", trail);
+  const locations = trail.locations;
+  const loc = locations[selected.value.postIndex];
 
-  console.log("coords ", coords);
-
-  return `(${coords.lng}, ${coords.lat})`;
+  return `(${loc.lng}, ${loc.lat})`;
 }
 
 function closeForm() {
   showCard.value = false;
 }
 
-/** functions for getting post from selected point */
+async function handleDeletePost(postId) {
+  try {
+    await fetchy(`/api/posts/${postId}`, "DELETE");
+  } catch {
+    return;
+  }
+
+  post.value = undefined;
+
+  emit("updaTrailWithoutPost", trail.value._id, selected.value.postIndex);
+}
+
+async function handleCreatePost(content, media) {
+  const res = await fetchy(`/api/posts`, "POST", { body: { content, media } });
+
+  console.log("+++++++++++++++++++++++++++++++");
+
+  // get post id to associate with trail
+  const postId = res.post._id;
+
+  console.log("postId: ", postId);
+
+  // get copy of the trail's list of locations
+  const newLocations = trail.value.locations;
+  console.log("newLocation:s ", newLocations);
+
+  // get location entry
+  let selectedLocation = newLocations[selected.value.postIndex];
+  console.log(selected.value.postIndex);
+  console.log("selectedLocation: ", selectedLocation);
+
+  // create new location object with postId added
+  let newLocation = { ...selectedLocation, post: postId };
+  console.log("newLocation ", newLocation);
+
+  // substitue it into the list of locations
+  newLocations[selected.value.postIndex] = newLocation;
+  console.log("newLocations ", newLocations);
+
+  // update the trail with its new locations
+  await fetchy(`/api/trails/${trail.value._id}`, "PATCH", { body: { locations: newLocations } });
+
+  // emit to parent to update list of trails
+  selectedPostId.value = postId;
+  emit("updateTrailWithPost", trail.value._id, selected.value.postIndex, newLocations);
+
+  await getPost(postId);
+}
 </script>
 
 <template>
   <div :id="props.mapRef" class="mapContainer"></div>
-  <v-sheet v-if="showCard" rounded class="post-sheet">
-    <div v-if="trail">
-      <div class="row">
-        <h3>{{ trail.name }}</h3>
-        <v-icon @click="closeForm">mdi-close</v-icon>
+  <div v-if="!loading">
+    <v-sheet v-if="showCard" rounded class="post-sheet">
+      <div v-if="trail">
+        <div class="row">
+          <h3>{{ trail.name }}</h3>
+          <v-icon @click="closeForm">mdi-close</v-icon>
+        </div>
+
+        <!-- TODO: clicking on author takes them to their profile -->
+
+        <!-- <h4>{{ trail.author }}</h4> -->
+        <h6>{{ trail.distance }} miles</h6>
+        <h6>{{ trail.duration }} hours</h6>
+        <h6 v-if="post && selectedPostId">{{ getCoordinates(trail) }}</h6>
       </div>
 
-      <!-- TODO: clicking on author takes them to their profile -->
-
-      <!-- <h4>{{ trail.author }}</h4> -->
-      <h6>{{ trail.distance }} miles</h6>
-      <h6>{{ trail.duration }} hours</h6>
-      <h6>{{ getCoordinates(trail) }}</h6>
-    </div>
-    <PostComponent v-if="post" :post="post" />
-    <div v-else class="gap">
-      <CreatePostForm />
-      <div class="center background">No post found for this location!</div>
-    </div>
-  </v-sheet>
+      <PostComponent v-if="post" :post="post" @handleDeletePost="handleDeletePost" />
+      <div v-else class="gap">
+        <CreatePostForm @handleCreatePost="handleCreatePost" />
+        <div class="center background">No post found for this location!</div>
+      </div>
+    </v-sheet>
+  </div>
+  <div v-else>
+    <v-sheet class="load-sheet post-sheet"> <v-progress-circular indeterminate color="#95b08d"></v-progress-circular> </v-sheet>
+  </div>
 </template>
 this.map.resize();
 <style scoped>
@@ -321,5 +405,10 @@ this.map.resize();
   height: calc(100% - 4em);
   overflow-y: scroll;
   background-color: #ffffffe9;
+}
+
+.load-sheet.post-sheet {
+  justify-content: center;
+  align-items: center;
 }
 </style>

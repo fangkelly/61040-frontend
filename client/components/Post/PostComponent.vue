@@ -3,20 +3,10 @@ import CommentListComponent from "@/components/Comment/CommentListComponent.vue"
 import { useUserStore } from "@/stores/user";
 import { formatDate } from "@/utils/formatDate";
 import { storeToRefs } from "pinia";
-import { fetchy } from "../../utils/fetchy";
 
 const props = defineProps(["post"]);
-const emit = defineEmits(["editPost", "refreshPosts"]);
+const emit = defineEmits(["editPost", "refreshPosts", "handleDeletePost"]);
 const { currentUsername } = storeToRefs(useUserStore());
-
-const deletePost = async () => {
-  try {
-    await fetchy(`/api/posts/${props.post._id}`, "DELETE");
-  } catch {
-    return;
-  }
-  emit("refreshPosts");
-};
 </script>
 
 <template>
@@ -32,7 +22,7 @@ const deletePost = async () => {
             <button class="btn-small" @click="emit('editPost', props.post._id)"><v-icon>mdi-pencil</v-icon></button>
           </li>
           <li>
-            <button class="button-error btn-small" @click="deletePost"><v-icon>mdi-close</v-icon></button>
+            <button class="button-error btn-small" @click="emit(`handleDeletePost`, props.post._id)"><v-icon>mdi-close</v-icon></button>
           </li>
         </menu>
         <article class="timestamp">
