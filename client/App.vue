@@ -4,10 +4,12 @@ import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
+import { useFriendStore } from "./stores/friend";
 
 const currentRoute = useRoute();
 const currentRouteName = computed(() => currentRoute.name);
 const userStore = useUserStore();
+const friendStore = useFriendStore();
 const { isLoggedIn } = storeToRefs(userStore);
 const { toast } = storeToRefs(useToastStore());
 
@@ -15,6 +17,8 @@ const { toast } = storeToRefs(useToastStore());
 onBeforeMount(async () => {
   try {
     await userStore.updateSession();
+    await friendStore.updateFriends();
+    await friendStore.updateRequests();
   } catch {
     // User is not logged in
   }

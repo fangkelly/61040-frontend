@@ -353,22 +353,22 @@ class Routes {
     if (query) {
       if (query._id) {
         trails = await Trail.getTrails({ _id: new ObjectId(query._id) });
+        return await Responses.trails(trails);
       }
 
       if (query.author) {
         const user = await User.getUserByUsername(query.author);
         trails = await Trail.getTrailsByAuthor(user._id);
+        return await Responses.trails(trails);
       }
     } else {
       trails = await Trail.getTrails({});
+      return await Responses.trails(trails);
     }
-    return await Responses.trails(trails);
   }
 
   @Router.patch("/trails/:_id")
   async updateTrail(session: WebSessionDoc, _id: ObjectId, body: Partial<TrailDoc>) {
-    console.log("_id ", _id);
-    console.log("body ", body);
     const user = WebSession.getUser(session);
     await Trail.isAuthor(user, _id);
     return await Trail.update(_id, body);

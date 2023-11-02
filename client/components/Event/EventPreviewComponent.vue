@@ -41,6 +41,8 @@ onBeforeMount(async () => {
       return a.username;
     })
     .includes(currentUsername.value);
+
+  loaded.value = true;
 });
 
 const registerEvent = async () => {
@@ -65,7 +67,7 @@ const unregisterEvent = async () => {
 </script>
 
 <template>
-  <div class="event-preview-container">
+  <div v-if="loaded" class="event-preview-container">
     <div class="event-preview-left">
       <p class="event-preview-month">{{ abbreviateMonth(parseInt(props.event.date.month)) }}</p>
       <p class="event-preview-date">{{ props.event.date.date }}</p>
@@ -90,12 +92,29 @@ const unregisterEvent = async () => {
       </div>
     </div>
   </div>
+  <div v-else class="load-container">
+    <v-progress-circular color="white" indeterminate></v-progress-circular>
+  </div>
 </template>
 
 <style scoped>
 v-divider {
   width: 1px;
   background-color: white;
+}
+
+.load-container {
+  justify-content: center;
+  align-content: center;
+  display: flex;
+
+  background-color: rgba(255, 255, 255, 0.5);
+  width: 350px;
+  height: 200px;
+  display: flex;
+  flex-direction: row;
+  color: white;
+  padding: 1em 0.5em;
 }
 
 .event-preview-container {

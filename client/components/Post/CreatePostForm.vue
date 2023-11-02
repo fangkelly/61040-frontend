@@ -60,7 +60,6 @@ const handleUploadImage = (files) => {
         ext.toLowerCase();
         if (ext === "jpg") ext = "jpeg";
         if (ext === "heic" || ext === "heif") {
-          console.log("heic detected");
           heic2any({
             blob: compressedFile,
             toType: "image/jpeg",

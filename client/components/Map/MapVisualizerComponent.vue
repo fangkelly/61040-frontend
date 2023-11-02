@@ -295,18 +295,6 @@ function fitToBbox(points) {
       return t * (2 - t);
     },
   });
-
-  // console.log(geoObject);
-  // var bounds = turf.bbox(geoObject);
-  // console.log("bounds ", bounds);
-  // try {
-  //   map.fitBounds([
-  //     [bounds[0], bounds[1]], // southwestern corner of the bounds
-  //     [bounds[2], bounds[3]], // northeastern corner of the bounds
-  //   ]);
-  // } catch (e) {
-  //   console.log("error fitting bounds");
-  // }
 }
 
 function clearMap() {

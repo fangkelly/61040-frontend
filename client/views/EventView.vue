@@ -7,14 +7,14 @@ import AttendeeCard from "../components/Event/AttendeeCardComponent.vue";
 import EventFeedComponent from "../components/Event/EventFeedComponent.vue";
 import MapVisualizerComponent from "../components/Map/MapVisualizerComponent.vue";
 import { fetchy } from "../utils/fetchy";
-import { formatTime } from "../utils/formatDate";
+import { abbreviateMonth, formatTime } from "../utils/formatDate";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 
 // const props = defineProps(["eventId"]);
 
 // TODO: eventId --> props in dynamic routing
 // let eventId = "kjfdsv"; //6541cf2c8886d3cd24bb33c0
-let eventId = "6542735bbe31638e58a84e01"; //6541cf2c8886d3cd24bb33c0
+let eventId = "65432c3d6afa0793764df2e7"; //6541cf2c8886d3cd24bb33c0
 
 let loaded = ref(false);
 let event = ref(undefined);
@@ -25,9 +25,10 @@ let trail = ref([]);
 async function getEvent() {
   const fetchedEvent = await fetchy("/api/events/", "GET", { query: { _id: eventId } });
   event.value = fetchedEvent[0];
+  console.log(event.value);
 
   if (fetchedEvent[0]) {
-    await getEventTrail([0].trail);
+    await getEventTrail(fetchedEvent[0].trail);
   }
 }
 
@@ -79,13 +80,19 @@ const unregisterEvent = async () => {
   <div id="event-view-container">
     <v-row v-if="event">
       <v-col md="7" class="details-section col">
-        <div>
-          <h1>{{ event.name }}</h1>
-          <h2>Hosted by {{ event.owner }}</h2>
-          <h3>{{ formatTime(event.time.hour, event.time.minute, event.time.am) }}</h3>
-          <div class="row">
-            <button v-if="registered" @click="unregisterEvent">Unregister</button>
-            <button v-else @click="registerEvent">Register</button>
+        <div class="row title">
+          <div class="date-tile">
+            <h2>{{ abbreviateMonth(parseInt(event.date.month)) }}</h2>
+            <h1>{{ event.date.date }}</h1>
+          </div>
+          <div>
+            <h1>{{ event.name }}</h1>
+            <h2>Hosted by {{ event.owner }}</h2>
+            <h3>{{ formatTime(event.time.hour, event.time.minute, event.time.am) }}</h3>
+            <div class="row">
+              <button v-if="registered" @click="unregisterEvent">Unregister</button>
+              <button v-else @click="registerEvent">Register</button>
+            </div>
           </div>
         </div>
 
@@ -180,6 +187,17 @@ const unregisterEvent = async () => {
 </template>
 
 <style scoped>
+.date-tile {
+  background-color: #ffffff97;
+  display: flex;
+  flex-direction: column;
+  padding: 2em;
+  width: fit-content;
+}
+.date-tile > * {
+  margin: 0;
+  padding: 0;
+}
 .checklist-table {
   background-color: rgba(255, 255, 255, 0.214);
   color: white;
@@ -228,6 +246,10 @@ h6 {
 
 .details-section {
   color: white;
+}
+
+.row.title {
+  gap: 2em;
 }
 
 .row {

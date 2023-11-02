@@ -3,26 +3,35 @@ import EventPreviewComponent from "@/components/Event/EventPreviewComponent.vue"
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";
-import { onBeforeMount, ref } from "vue";
+import { computed, onBeforeMount, ref } from "vue";
 import MapInteractiveComponent from "../components/Map/MapInteractiveComponent.vue";
+import { useFriendStore } from "../stores/friend";
 import { filterFutureDateTime, sortAscendingDateTime } from "../utils/formatDate";
+const { friends, requests } = storeToRefs(useFriendStore());
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
+const friendStore = useFriendStore();
 
 const props = defineProps(["username"]);
 const username = "kfang";
 const loaded = ref(false);
+
+const friendshipStatus = computed(() => {
+  const friendship = requests.value.find((req) => req.to === username && req.from === currentUsername.value);
+  if (friendship) {
+    return friendship.status;
+  } else {
+    return friendship;
+  }
+});
 
 let upcomingEvents = ref([]);
 // let pinnedTrails = ref<Array<Record<string, string>>>([]);
 let allTrails = ref<Array<Record<string, string>>>([]); // all of the user's trail TODO: use store to get this value
 
 async function getUpcomingEvents() {
-  console.log("in get upcoming events");
   let registeredEvents;
   try {
-    console.log("here");
     registeredEvents = await fetchy(`/api/events/registered`, "GET", { query: { user: username } });
-    console.log("registeredEvents ", registeredEvents);
   } catch (_) {
     return;
   }
@@ -30,11 +39,9 @@ async function getUpcomingEvents() {
   const sortedRegisteredEvents = sortAscendingDateTime(registeredEvents);
   const futureRegisteredEvents = filterFutureDateTime(sortedRegisteredEvents);
   upcomingEvents.value = futureRegisteredEvents;
-  console.log("upcoming events ", futureRegisteredEvents);
 }
 
 async function getAllTrails() {
-  console.log("getAllTrails");
   let usersTrails;
   try {
     usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: username } });
@@ -42,9 +49,6 @@ async function getAllTrails() {
     return;
   }
   allTrails.value = usersTrails;
-  console.log("allTrails ", usersTrails);
-
-  // pinnedTrails.value = usersTrails.filter((trail) => trail.pinned);
 }
 
 onBeforeMount(async () => {
@@ -55,17 +59,11 @@ onBeforeMount(async () => {
 });
 
 function updateTrailWithPost(trailId: string, postIndex: number, newLocations: Array<{ lat: number; lng: number; post?: string }>) {
-  console.log("in updateTrailWithPost");
-
   // find index of the trail to update
   const trailIndex = allTrails.value.findIndex((t) => t._id.toString() === trailId.toString());
 
-  console.log("postIndex", postIndex);
   // get the trail to update
   let updatedTrail = allTrails.value[trailIndex];
-  console.log("trailIndex ", trailIndex);
-  console.log("updatedTrail ", updatedTrail);
-  console.log("new locations ", newLocations);
 
   // change the location of the trail
   updatedTrail.locations = newLocations;
@@ -75,7 +73,6 @@ function updateTrailWithPost(trailId: string, postIndex: number, newLocations: A
 
   // replace the trail with the new trail
   newTrails.splice(trailIndex, 1, updatedTrail);
-  console.log("newTrails ", newTrails);
   allTrails.value = newTrails;
 }
 
@@ -85,11 +82,9 @@ function updateTrailWithoutPost(trailId, postIndex) {
 
   // get the trail to update
   let updatedTrail = allTrails.value[trailIndex];
-  console.log("updatedTrail ", updatedTrail);
 
   // get the location of the trail
   const location = updatedTrail.locations[postIndex];
-  console.log("location ", location);
 
   // update the post of the location to undefined
   location.post = undefined;
@@ -99,60 +94,84 @@ function updateTrailWithoutPost(trailId, postIndex) {
 
   // replace the trail with the new trail
   newTrails.splice(trailIndex, 1, updatedTrail);
-  console.log("newTrails ", newTrails);
   allTrails.value = newTrails;
+}
+
+async function handleRemoveFriend(username) {
+  await friendStore.removeFriend(username);
+  await friendStore.updateFriends();
+}
+
+async function handleSendRequest(username) {
+  await friendStore.sendFriendRequest(username);
+  await friendStore.updateRequests();
+}
+
+async function handleRemoveRequest(username) {
+  await friendStore.removeFriendRequest(username);
+  await friendStore.updateRequests();
 }
 </script>
 
 <template>
   <main id="profile-container">
-    <section id="profile-section">
-      <div id="avatar-container">
-        <img id="avatar-img" src="https://via.placeholder.com/100x100/cf5" />
-        <!-- <input type="file" /> -->
-      </div>
-      <h1>{{ username }}</h1>
-    </section>
-
-    <section>
-      <h3>Upcoming Trails</h3>
-      <div>
-        <div v-if="upcomingEvents.length > 0" id="upcoming-trails-list" class="row">
-          <article v-for="event in upcomingEvents" :key="event._id">
-            <EventPreviewComponent :event="event" />
-          </article>
+    <div v-if="loaded" class="col">
+      <section id="profile-section">
+        <div id="avatar-container">
+          <img id="avatar-img" src="https://via.placeholder.com/100x100/cf5" />
+          <!-- <input type="file" /> -->
         </div>
+        <div>
+          <h1>{{ username }}</h1>
+          <!-- If the user is friends with the profile owner -->
+          <button v-if="friends.includes(currentUsername)" @click="handleRemoveFriend(username)">Remove Friend</button>
 
-        <!-- TODO: REDIRECT TO EVENT EXPLORATION -->
-        <div v-else>No upcoming events. Explore <a>events</a></div>
-      </div>
-    </section>
+          <!-- If the user send a request to the profile owner -->
+          <button v-else-if="friendshipStatus === `pending`" @click="handleRemoveFriend(username)">
+            <p>Remove Friend Request</p>
+          </button>
 
-    <!-- <section>
-      <h3>Pinned Trails</h3>
-      <div class="row">
-        <article v-for="pinned in pinnedTrails" :key="pinned._id">
-          <v-sheet class="pinned-thumbnail"> {{ pinned.name }} </v-sheet>
-        </article>
+          <!-- If the user has not sent a request or a request has been rejected -->
+          <button v-else-if="username !== currentUsername" @click="handleSendRequest(username)">Send Friend Request</button>
+        </div>
+      </section>
 
-        <article v-for="x in Array(5 - pinnedTrails.length).keys()" :key="x">
-          <v-sheet class="pinned-thumbnail add-pinned-button">
-            <v-icon color="white">mdi-plus</v-icon>
-          </v-sheet>
-        </article>
-      </div>
-    </section> -->
+      <section>
+        <h3>Upcoming Trails</h3>
+        <div>
+          <div v-if="upcomingEvents.length > 0" id="upcoming-trails-list" class="row">
+            <article v-for="event in upcomingEvents" :key="event._id">
+              <EventPreviewComponent :event="event" />
+            </article>
+          </div>
 
-    <section>
-      <h3>All Trails</h3>
-      <div class="map-container">
-        <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" @updateTrailWithPost="updateTrailWithPost" @updateTrailWithoutPost="updateTrailWithoutPost" />
-      </div>
-    </section>
+          <!-- TODO: REDIRECT TO EVENT EXPLORATION -->
+          <div v-else>No upcoming events. Explore <a>events</a></div>
+        </div>
+      </section>
+
+      <section>
+        <h3>All Trails</h3>
+        <div class="map-container">
+          <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" @updateTrailWithPost="updateTrailWithPost" @updateTrailWithoutPost="updateTrailWithoutPost" />
+        </div>
+      </section>
+    </div>
+
+    <div v-else class="load-container"><v-progress-circular color="white" indeterminate></v-progress-circular></div>
   </main>
 </template>
 
 <style scoped>
+.load-container {
+  flex: 1;
+  margin: auto;
+  height: 100vh;
+}
+section > h3 {
+  padding-bottom: 1em;
+}
+
 main {
   display: flex;
   flex-direction: column;
@@ -197,6 +216,13 @@ h3 {
   flex-direction: column;
   justify-content: space-between;
   background-color: #95b08d;
+  flex: 1;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 2em;
 }
 
 #profile-section {

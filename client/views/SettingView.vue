@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ManageFriendsComponent from "@/components/Friend/ManageFriendsComponent.vue";
+import ManageRequestsComponent from "@/components/Friend/ManageRequestsComponent.vue";
 import router from "@/router";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
@@ -24,5 +26,8 @@ async function delete_() {
     <button class="pure-button pure-button-primary" @click="logout">Logout</button>
     <button class="button-error pure-button" @click="delete_">Delete User</button>
     <UpdateUserForm />
+
+    <ManageFriendsComponent />
+    <ManageRequestsComponent />
   </main>
 </template>

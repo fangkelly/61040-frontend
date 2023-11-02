@@ -27,11 +27,9 @@ let trail = ref();
 async function getPost(postId) {
   loading.value = true;
   if (postId) {
-    console.log("postId ", postId);
     const postResponse = await fetchy(`/api/posts/`, "GET", { query: { id: postId } });
 
     post.value = postResponse.post;
-    console.log("post.value ", post.value);
   } else {
     post.value = undefined;
   }
@@ -46,18 +44,13 @@ watch(selected, async (newSelected, oldSelected) => {
   const selectedTrail = props.trails.find((t) => t._id === trailId);
   trail.value = selectedTrail;
 
-  console.log("postindex ", postIndex);
-  console.log(selectedTrail.locations[postIndex]);
-
   const postId = selectedTrail.locations[postIndex].post;
   await getPost(postId);
 
   loading.value = false;
 });
 
-onUpdated(() => {
-  console.log("tonUPDATED trails ", props.trails);
-});
+onUpdated(() => {});
 
 onMounted(() => {
   map = new mapboxgl.Map({
@@ -243,7 +236,6 @@ function mapRoute(trail, route) {
 }
 
 async function mapTrail(trail) {
-  console.log("mapping trail ", trail);
   let points;
 
   // if trail has no points
@@ -262,7 +254,6 @@ async function mapTrail(trail) {
 }
 
 function getCoordinates(trail) {
-  console.log("trail ", trail);
   const locations = trail.locations;
   const loc = locations[selected.value.postIndex];
 
@@ -288,29 +279,20 @@ async function handleDeletePost(postId) {
 async function handleCreatePost(content, media) {
   const res = await fetchy(`/api/posts`, "POST", { body: { content, media } });
 
-  console.log("+++++++++++++++++++++++++++++++");
-
   // get post id to associate with trail
   const postId = res.post._id;
 
-  console.log("postId: ", postId);
-
   // get copy of the trail's list of locations
   const newLocations = trail.value.locations;
-  console.log("newLocation:s ", newLocations);
 
   // get location entry
   let selectedLocation = newLocations[selected.value.postIndex];
-  console.log(selected.value.postIndex);
-  console.log("selectedLocation: ", selectedLocation);
 
   // create new location object with postId added
   let newLocation = { ...selectedLocation, post: postId };
-  console.log("newLocation ", newLocation);
 
   // substitue it into the list of locations
   newLocations[selected.value.postIndex] = newLocation;
-  console.log("newLocations ", newLocations);
 
   // update the trail with its new locations
   await fetchy(`/api/trails/${trail.value._id}`, "PATCH", { body: { locations: newLocations } });

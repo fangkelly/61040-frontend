@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { useUserStore } from "@/stores/user";
+import { storeToRefs } from "pinia";
 import { defineProps, onBeforeMount, ref } from "vue";
 import { fetchy } from "../../utils/fetchy";
 import CreatePostForm from "../Post/CreatePostForm.vue";
 import PostComponent from "../Post/PostComponent.vue";
+const { isLoggedIn } = storeToRefs(useUserStore());
 const props = defineProps(["postIds", "eventId"]);
 
 const loaded = ref(false);
@@ -14,7 +17,6 @@ async function getPosts() {
   });
 
   const fetchedPosts = await Promise.all(postPromises);
-  console.log("fetchedPosts ", fetchedPosts);
   posts.value = fetchedPosts.map((p) => {
     return p.post;
   });
@@ -26,10 +28,8 @@ onBeforeMount(async () => {
 });
 
 async function handleCreatePost(content: string, media?: string) {
-  console.log("CONTENT AND MEDIA IN HANDLE CREATE PSOT ", content, media);
   const res = await fetchy(`/api/events/${props.eventId}/post`, "PATCH", { body: { content, media } });
 
-  console.log(res);
   // TODO; state management
   const postCopy = [...posts.value];
   postCopy.unshift(res);
@@ -37,9 +37,7 @@ async function handleCreatePost(content: string, media?: string) {
 }
 
 async function handleDeletePost(postId: string) {
-  console.log("postId to delete ", postId);
   const res = await fetchy(`/api/events/${props.eventId}/delete_post/${postId}`, "PATCH");
-  console.log(res);
 
   // TODO: state management
   posts.value = posts.value.filter((p) => {
@@ -51,7 +49,7 @@ async function handleDeletePost(postId: string) {
 <template>
   <div>
     <div class="background form-container">
-      <CreatePostForm @handleCreatePost="handleCreatePost" />
+      <CreatePostForm @handleCreatePost="handleCreatePost" v-if="isLoggedIn" />
     </div>
 
     <div v-if="loaded && posts.length > 0" class="event-post-list">

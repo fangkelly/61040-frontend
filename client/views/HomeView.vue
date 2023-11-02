@@ -3,8 +3,10 @@ import EventComposerComponent from "@/components/Event/EventComposerComponent.vu
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { onBeforeMount, ref } from "vue";
+import { useFriendStore } from "../stores/friend";
 import { fetchy } from "../utils/fetchy";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
+const { friends } = storeToRefs(useFriendStore());
 const mapView = ref(true);
 
 /** get all trails */

@@ -14,16 +14,13 @@ import router from "../server/routes";
 
 export const app = express();
 const PORT = process.env.PORT || 3000;
-console.log("HIIII");
 app.use(logger("dev"));
 
 app.use(cors()); // https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
-console.log("HIIII");
 app.use(express.json({ limit: "200mb" })); // Enable parsing JSON in requests and responses.
 app.use(express.urlencoded({ extended: true, limit: "200mb" })); // Also enable URL encoded request and responses.
 
-console.log("HIIII");
 // Session allows us to store a cookie 🍪.
 app.use(
   session({
