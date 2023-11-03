@@ -28,9 +28,8 @@ onBeforeMount(async () => {
 });
 
 async function handleCreatePost(content: string, media?: string) {
-  const res = await fetchy(`/api/events/${props.eventId}/post`, "PATCH", { body: { content, media } });
+  const res = await fetchy(`/api/events/${props.eventId}/post`, "PATCH", { body: { content, media, event: props.eventId } });
 
-  // TODO; state management
   const postCopy = [...posts.value];
   postCopy.unshift(res);
   posts.value = postCopy;

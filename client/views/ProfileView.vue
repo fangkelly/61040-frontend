@@ -12,7 +12,7 @@ const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 const friendStore = useFriendStore();
 
 const props = defineProps(["username"]);
-const username = "kfang";
+const username = "k";
 const loaded = ref(false);
 
 const friendshipStatus = computed(() => {
@@ -44,11 +44,13 @@ async function getUpcomingEvents() {
 async function getAllTrails() {
   let usersTrails;
   try {
-    usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: username } });
+    console.log("in get allt rails for map interactive");
+    usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: username, event: undefined } });
   } catch (_) {
     return;
   }
-  allTrails.value = usersTrails;
+  const filteredOutEvents = usersTrails.filter((t) => !t.event);
+  allTrails.value = filteredOutEvents;
 }
 
 onBeforeMount(async () => {
@@ -57,45 +59,6 @@ onBeforeMount(async () => {
   await getAllTrails();
   loaded.value = true;
 });
-
-function updateTrailWithPost(trailId: string, postIndex: number, newLocations: Array<{ lat: number; lng: number; post?: string }>) {
-  // find index of the trail to update
-  const trailIndex = allTrails.value.findIndex((t) => t._id.toString() === trailId.toString());
-
-  // get the trail to update
-  let updatedTrail = allTrails.value[trailIndex];
-
-  // change the location of the trail
-  updatedTrail.locations = newLocations;
-
-  // copy of all the trails
-  const newTrails = [...allTrails.value];
-
-  // replace the trail with the new trail
-  newTrails.splice(trailIndex, 1, updatedTrail);
-  allTrails.value = newTrails;
-}
-
-function updateTrailWithoutPost(trailId, postIndex) {
-  // find index of the trail to update
-  const trailIndex = allTrails.value.findIndex((t) => t._id.toString() === trailId.toString());
-
-  // get the trail to update
-  let updatedTrail = allTrails.value[trailIndex];
-
-  // get the location of the trail
-  const location = updatedTrail.locations[postIndex];
-
-  // update the post of the location to undefined
-  location.post = undefined;
-
-  // copy of all the trails
-  const newTrails = [...allTrails.value];
-
-  // replace the trail with the new trail
-  newTrails.splice(trailIndex, 1, updatedTrail);
-  allTrails.value = newTrails;
-}
 
 async function handleRemoveFriend(username) {
   await friendStore.removeFriend(username);
@@ -117,27 +80,36 @@ async function handleRemoveRequest(username) {
   <main id="profile-container">
     <div v-if="loaded" class="col">
       <section id="profile-section">
-        <div id="avatar-container">
-          <img id="avatar-img" src="https://via.placeholder.com/100x100/cf5" />
-          <!-- <input type="file" /> -->
-        </div>
-        <div>
+        <div class="row">
           <h1>{{ username }}</h1>
           <!-- If the user is friends with the profile owner -->
           <button v-if="friends.includes(currentUsername)" @click="handleRemoveFriend(username)">Remove Friend</button>
 
           <!-- If the user send a request to the profile owner -->
-          <button v-else-if="friendshipStatus === `pending`" @click="handleRemoveFriend(username)">
+          <button v-else-if="friendshipStatus === `pending`" @click="handleRemoveRequest(username)">
             <p>Remove Friend Request</p>
           </button>
 
           <!-- If the user has not sent a request or a request has been rejected -->
           <button v-else-if="username !== currentUsername" @click="handleSendRequest(username)">Send Friend Request</button>
         </div>
+        <div class="row">
+          <p>{{ allTrails.length }} trails hiked</p>
+          <v-icon color="white" size="x-small">mdi-asterisk</v-icon>
+          <p>
+            {{ parseInt(allTrails.reduce((accumulator, currentValue) => accumulator + currentValue.distance, 0)).toFixed(2) }}
+            miles hiked
+          </p>
+          <v-icon color="white" size="x-small">mdi-asterisk</v-icon>
+          <p>
+            {{ parseInt(allTrails.reduce((accumulator, currentValue) => accumulator + currentValue.duration, 0)).toFixed(2) }}
+            miles hiked
+          </p>
+        </div>
       </section>
 
       <section>
-        <h3>Upcoming Trails</h3>
+        <h3>Upcoming Events</h3>
         <div>
           <div v-if="upcomingEvents.length > 0" id="upcoming-trails-list" class="row">
             <article v-for="event in upcomingEvents" :key="event._id">
@@ -146,14 +118,18 @@ async function handleRemoveRequest(username) {
           </div>
 
           <!-- TODO: REDIRECT TO EVENT EXPLORATION -->
-          <div v-else>No upcoming events. Explore <a>events</a></div>
+          <div class="empty" v-else>No upcoming events!</div>
         </div>
       </section>
 
       <section>
-        <h3>All Trails</h3>
+        <div>
+          <h3>All Trails</h3>
+          <p v-if="username === currentUsername">Drag the points to reformat your trail. The API will reposition your points and compute a route based on what footpaths exist in the real world!</p>
+          <p v-else>See where {{ username }} has been! Click on a point to see what {{ username }} posted at that location.</p>
+        </div>
         <div class="map-container">
-          <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" @updateTrailWithPost="updateTrailWithPost" @updateTrailWithoutPost="updateTrailWithoutPost" />
+          <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" @refreshTrails="getAllTrails" />
         </div>
       </section>
     </div>
@@ -182,6 +158,7 @@ main {
 
 h1,
 h2,
+p,
 h3 {
   color: white;
 }
@@ -200,10 +177,18 @@ h3 {
   align-items: center;
 }
 
+.empty {
+  color: white;
+  padding: 2em;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.348);
+}
+
 .row {
   display: flex;
   flex-direction: row;
   column-gap: 1em;
+  align-items: center;
 }
 
 #upcoming-trails-list {
@@ -219,6 +204,25 @@ h3 {
   flex: 1;
 }
 
+button {
+  border: 1px solid white;
+  background-color: rgb(0, 0, 0, 0);
+  color: white;
+  font-size: 12px;
+  font-weight: 100;
+  cursor: pointer;
+  width: max-content;
+  border-radius: 30px;
+  transition: all 0.25s ease-in;
+  padding: 0.5em 2em;
+}
+
+button:hover {
+  background-color: white;
+  color: #95b08d;
+  border: 1px solid #95b08d;
+}
+
 .col {
   display: flex;
   flex-direction: column;
@@ -227,7 +231,7 @@ h3 {
 
 #profile-section {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: flex-start;
   column-gap: 30px;
 }

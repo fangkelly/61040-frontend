@@ -35,8 +35,25 @@ async function register() {
 </template>
 
 <style scoped>
-h3 {
-  display: flex;
-  justify-content: center;
+button {
+  border: 1px solid white;
+  background-color: rgb(0, 0, 0, 0);
+  color: white;
+  font-size: 12px;
+  font-weight: 100;
+  cursor: pointer;
+  width: max-content;
+  border-radius: 30px;
+  transition: all 0.25s ease-in;
+  padding: 0.5em 2em;
+}
+input {
+  color: white;
+}
+
+button:hover {
+  background-color: white;
+  color: #95b08d;
+  border: 1px solid #95b08d;
 }
 </style>

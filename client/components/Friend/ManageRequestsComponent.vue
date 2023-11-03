@@ -19,8 +19,9 @@ const pendingRequests = computed(() => {
   const pending = requests.value
     .filter((r: requestType) => r.status === "pending" && r.to === currentUsername.value)
     .map((r: requestType) => {
-      r.from;
+      return r.from;
     });
+  console.log("PENDING ", pending);
   return pending;
 });
 
@@ -46,18 +47,28 @@ const handleRejectRequest = async (pending) => {
 <template>
   <div v-if="loaded" class="friend-table">
     <h3>Pending Requests</h3>
+    <div v-if="pendingRequests.length === 0">No requests.</div>
+
     <div v-for="pending in pendingRequests" :key="`pending-${pending}`" class="friend-row">
       {{ pending }}
       <div class="row">
-        <v-icon @click="handleRejectRequest(pending)">mdi-close</v-icon>
         <v-icon @click="handleAcceptRequest(pending)">mdi-check</v-icon>
+
+        <v-icon @click="handleRejectRequest(pending)">mdi-close</v-icon>
       </div>
     </div>
   </div>
-  <v-progress-circular v-else indeterminate color="white"></v-progress-circular>
+  <div v-else class="center">
+    <v-progress-circular indeterminate color="white"></v-progress-circular>
+  </div>
 </template>
 
 <style scoped>
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .row {
   display: flex;
   flex-direction: row;

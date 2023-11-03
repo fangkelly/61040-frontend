@@ -71,6 +71,10 @@ nav {
   background-color: #95b08d;
   display: flex;
   align-items: center;
+  border-bottom: 0.5px solid white;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-family: "Lato", sans-serif;
+  font-family: "Open Sans", sans-serif;
 }
 
 #app-container {
@@ -78,6 +82,9 @@ nav {
   display: flex;
   flex-direction: column;
   /* background-color: #95b08d; */
+  font-family: "IBM Plex Sans", sans-serif;
+  font-family: "Lato", sans-serif;
+  font-family: "Open Sans", sans-serif;
 }
 
 h1 {

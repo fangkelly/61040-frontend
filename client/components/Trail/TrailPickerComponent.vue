@@ -7,6 +7,12 @@ const emit = defineEmits("update:trailValue");
 let distance = ref(0);
 let duration = ref(0);
 
+const eventTrails = computed(() => {
+  console.log(props.trails);
+  const filteredTrails = props.trails.filter((t) => t.event);
+  return filteredTrails;
+});
+
 const selectedTrail = computed({
   get() {
     return props.trailValue;
@@ -39,7 +45,16 @@ const trailSelectRules = [
 <template>
   <v-row>
     <v-col>
-      <v-select color="#95b08d" variant="outlined" clearable v-model="selectedTrail" label="Select from existing trail" :items="props.trails" :itemProps="itemProps" :rules="trailSelectRules">
+      <v-select
+        color="#95b08d"
+        variant="outlined"
+        clearable
+        v-model="selectedTrail"
+        label="Select from previously constructed trails"
+        :items="eventTrails"
+        :itemProps="itemProps"
+        :rules="trailSelectRules"
+      >
       </v-select>
       <div v-if="selectedTrail">
         <h3>{{ selectedTrail.name }}</h3>

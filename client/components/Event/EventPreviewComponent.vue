@@ -24,12 +24,15 @@ async function getAttendees() {
 }
 
 const getAttendeesPreview = () => {
+  if (attendees.value.length === 0) {
+    return "No one else attending yet";
+  }
   if (attendees.value.length === 1) {
-    return "is attending";
+    return `${attendees.value[0].username} is attending`;
   } else if (attendees.value.length < 4) {
-    return "are attending.";
+    return `${attendees.value.map((a) => a.username).join(", ")} are attending.`;
   } else if (attendees.value.length >= 4) {
-    return `and ${attendees.value.length - 3} others attending`;
+    return `${attendees.value.map((a) => a.username).join(", ")} and ${attendees.value.length - 3} others attending`;
   }
 };
 
@@ -85,9 +88,6 @@ const unregisterEvent = async () => {
         <button>View Details</button>
       </div>
       <div class="row">
-        <article v-for="attendee in attendees.slice(0, 3)" :key="attendee._id">
-          <v-avatar color="surface-variant" size="x-small"></v-avatar>
-        </article>
         <p class="event-preview-members">{{ getAttendeesPreview() }}</p>
       </div>
     </div>
@@ -163,7 +163,7 @@ v-divider {
 }
 
 .event-preview-members {
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .event-preview-time {

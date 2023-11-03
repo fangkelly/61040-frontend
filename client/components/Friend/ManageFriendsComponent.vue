@@ -23,19 +23,31 @@ async function handleRemoveFriend(friend: string) {
 <template>
   <div class="friend-table" v-if="loaded">
     <h3>Friends</h3>
+    <div v-if="friends.length === 0">No friends.</div>
     <div v-for="friend in friends" :key="`friend=${friend}`" class="friend-row">
-      <p>{{ friend }}</p>
+      <div class="row">
+        <v-icon>mdi-account</v-icon>
+        <p>{{ friend }}</p>
+      </div>
       <v-icon @click="handleRemoveFriend(friend)">mdi-close</v-icon>
     </div>
   </div>
-  <v-progress-circular v-else indeterminate color="white"></v-progress-circular>
+  <div v-else class="center">
+    <v-progress-circular indeterminate color="white"></v-progress-circular>
+  </div>
 </template>
 
 <style scoped>
+.row {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
 .friend-row {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  width: 80%;
 }
 
 .friend-table {

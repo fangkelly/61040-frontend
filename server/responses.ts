@@ -88,8 +88,13 @@ export default class Responses {
     if (!trail) {
       return trail;
     }
-    const author = await User.getUserById(trail.author);
-    return { ...trail, author: author.username };
+
+    if (trail.author) {
+      const author = await User.getUserById(trail.author);
+      return { ...trail, author: author.username };
+    }
+
+    return { ...trail, author: undefined };
   }
 
   /**

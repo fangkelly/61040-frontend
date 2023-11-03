@@ -6,10 +6,11 @@ import { useToastStore } from "../../stores/toast";
 import { fetchy } from "../../utils/fetchy";
 
 const props = defineProps(["trails"]);
+const emit = defineEmits(["refreshTrails"]);
 
 /** optional tags and the associated refs for storing them */
 const difficultyTags = ["Beginner", "Intermediate", "Expert", "Class 1", "Class 2", "Class 3", "Class 4", "Class 5"];
-let difficulty = ref();
+let difficulty = ref([]);
 
 const activityTags = ["Camping", "Running", "Climbing", "Fishing", "Swimming", "Backpacking", "Biking", "Ski", "Ice Climbing"];
 let activity = ref([]);
@@ -138,25 +139,28 @@ const createEvent = async () => {
       locations: trailJSON,
       distance: trailDistance.value,
       duration: trailDuration.value,
+      event: true,
     };
   } else {
     const trailJSON = JSON.parse(JSON.stringify(selectedTrail.value));
     trail = {
+      author: trailJSON.author,
       name: trailJSON.name,
       description: trailJSON.description,
       locations: trailJSON.locations,
       distance: trailJSON.distance,
       duration: trailJSON.duration,
+      event: true,
     };
   }
 
-  const trailResponse = await fetchy(`/api/trails`, "POST", { body: trail });
+  let trailResponse;
 
-  if (!trailResponse.ok) {
+  if (draftTrail.value) {
+    trailResponse = await fetchy(`/api/trails`, "POST", { body: trail });
+
     useToastStore().showToast({ message: trailResponse.message, style: trailResponse.ok ? "success" : "error" });
   }
-
-  console.log("dateTime ", date);
 
   const dateTime = date.value.split("T");
   const dateArray = dateTime[0].split("-");
@@ -186,18 +190,20 @@ const createEvent = async () => {
     date: sanitizedDate,
     time: sanitizedTime,
     tags: {
-      difficulty: JSON.parse(JSON.stringify(difficulty.value)),
-      activity: JSON.parse(JSON.stringify(activity.value)),
-      terrain: JSON.parse(JSON.stringify(terrain.value)),
-      other: JSON.parse(JSON.stringify(other.value)),
+      difficulty: difficulty.value.length > 0 ? JSON.parse(JSON.stringify(difficulty.value)) : [],
+      activity: activity.value.length > 0 ? JSON.parse(JSON.stringify(activity.value)) : [],
+      terrain: terrain.value.length > 0 ? JSON.parse(JSON.stringify(terrain.value)) : [],
+      other: other.value.length > 0 ? JSON.parse(JSON.stringify(other.value)) : [],
     },
-    trail: trailResponse.trail._id,
+    trail: draftTrail.value ? trailResponse.trail._id : selectedTrail.value._id,
     checklist: JSON.parse(JSON.stringify(checklist.value)),
   };
 
   const eventResponse = await fetchy(`/api/events`, "POST", { body: event });
 
   useToastStore().showToast({ message: eventResponse.msg, style: eventResponse.ok ? "success" : "error" });
+
+  emit("refreshTrails");
   emptyForm();
 };
 

@@ -2,7 +2,8 @@
 import EventComposerComponent from "@/components/Event/EventComposerComponent.vue";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
-import { onBeforeMount, ref } from "vue";
+import { computed, onBeforeMount, ref } from "vue";
+import MapInteractiveComponent from "../components/Map/MapInteractiveComponent.vue";
 import { useFriendStore } from "../stores/friend";
 import { fetchy } from "../utils/fetchy";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
@@ -14,14 +15,27 @@ const mapView = ref(true);
 let allTrails = ref<Array<Record<string, string>>>([]);
 
 async function getAllTrails() {
-  let usersTrails;
+  let universalTrails;
   try {
-    usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: currentUsername.value } });
+    universalTrails = await fetchy(`api/trails/`, "GET", { query: {} });
+    console.log("allTrails ", universalTrails);
   } catch (_) {
     return;
   }
-  allTrails.value = usersTrails;
+  allTrails.value = universalTrails;
+
+  console.log("in getAllTraisl");
 }
+
+const eventTrails = computed(() => {
+  const filteredOutNonEvents = allTrails.value.filter((t) => t.event);
+  return filteredOutNonEvents;
+});
+
+const usersTrails = computed(() => {
+  const filteredOutEvents = allTrails.value.filter((t) => !t.event);
+  return filteredOutEvents;
+});
 
 const loaded = ref(false);
 
@@ -35,8 +49,7 @@ onBeforeMount(async () => {
   <main>
     <section id="home-nav" class="row home-buttons">
       <section class="create-content row">
-        <v-icon color="white">mdi-post</v-icon>
-        <EventComposerComponent :trails="allTrails" />
+        <EventComposerComponent @refreshTrails="getAllTrails" :trails="eventTrails" />
       </section>
       <section class="view-toggle row">
         <v-icon color="white">mdi-view-grid</v-icon>
@@ -45,14 +58,14 @@ onBeforeMount(async () => {
       </section>
     </section>
 
-    <!-- <div v-if="mapView"><MapInteractiveComponent mapRef="home-map-container" /></div> -->
+    <div v-if="mapView" class="map-container"><MapInteractiveComponent :trails="usersTrails" @refreshTrails="getAllTrails" mapRef="home-map-container" /></div>
   </main>
 </template>
 
 <style scoped>
-#home-map-container {
+.map-container {
   position: relative;
-  height: 100vh;
+  height: 90vh;
 }
 
 h1 {
@@ -89,5 +102,11 @@ h1 {
 
 .home-buttons {
   justify-content: space-between;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 </style>

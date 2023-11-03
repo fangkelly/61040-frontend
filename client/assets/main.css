@@ -3,6 +3,7 @@
 :root {
   --red: rgb(208, 67, 12);
   --base-bg: #f1f3f5;
+  
 }
 
 button.btn-small {
@@ -35,14 +36,37 @@ a.button {
   min-height: 100vh;
 }
 
+
+.marker.friend {
+  background-color: #e4a363b6;
+
+}
+.friend {
+  background-color: #e4a363b6;
+}
+.marker.mine {   background-color: #e36363b6;
+}
+.mine {   background-color: #e36363b6;
+}
+
+.marker.other {
+  background-color: #ce8affb6;
+}
+.other {
+  background-color: #ce8affb6;
+}
+
+
 .marker {
   border-radius: 50%;
   height: 20px;
   width: 20px;
-  background-color: #e46363;
   display: flex;
   justify-content: center;
+  background-color: #e36363;
   align-items: center;
   color: white;
 }
+
+
 

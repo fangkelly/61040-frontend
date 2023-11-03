@@ -1,22 +1,34 @@
 <script setup lang="ts">
+import { useUserStore } from "@/stores/user";
 import mapboxgl from "mapbox-gl";
-import { onMounted, onUnmounted, onUpdated, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { onMounted, onUnmounted, ref, watch } from "vue";
+import { useFriendStore } from "../../stores/friend";
 import { useToastStore } from "../../stores/toast";
 import { fetchy } from "../../utils/fetchy";
 import CreatePostForm from "../Post/CreatePostForm.vue";
 import PostComponent from "../Post/PostComponent.vue";
 mapboxgl.accessToken = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
 const MAPBOX_TOKEN = "pk.eyJ1IjoiZmFuZ2siLCJhIjoiY2t3MG56cWpjNDd3cjJvbW9iam9sOGo1aSJ9.RBRaejr5HQqDRQaCIBDzZA";
+const { currentUsername } = storeToRefs(useUserStore());
+const { friends } = storeToRefs(useFriendStore());
 
 const props = defineProps(["trails", "mapRef"]);
-const emit = defineEmits(["updateTrailWithPost", "updateTrailWithoutPost"]);
+const emit = defineEmits(["refreshTrails"]);
 const loading = ref(false);
+const currentMarkers = ref({});
+const currentTrails = ref([]);
+
+const COLOR_MAP = {
+  mine: "#e36363",
+  friend: "#e4a363",
+  other: "#ce8aff",
+};
 
 // TODO: compute center and bounding box to capture ALL points -- set it in mount?
 let { lng, lat, bearing, pitch, zoom } = { lng: -158.124, lat: 21.431, bearing: 0, pitch: 60, zoom: 12 };
 
 let map;
-let selectedTrailId = ref();
 let selectedPostId = ref();
 let showCard = ref(false);
 
@@ -49,8 +61,6 @@ watch(selected, async (newSelected, oldSelected) => {
 
   loading.value = false;
 });
-
-onUpdated(() => {});
 
 onMounted(() => {
   map = new mapboxgl.Map({
@@ -115,11 +125,7 @@ onMounted(() => {
 
   map.on("load", async function () {
     map.resize();
-    const trailPromises = props.trails.map(async (trail) => {
-      return await mapTrail(trail);
-    });
-
-    await Promise.all(trailPromises);
+    await getTrails();
   });
 });
 
@@ -180,10 +186,48 @@ async function getDirections(trail) {
 
 /** mapping functions */
 
+function clearAllMarkers(trailId?: string) {
+  console.log("in clear all markers");
+  if (!trailId) {
+    for (const [t, markers] of Object.entries(currentMarkers.value)) {
+      for (const m of markers) {
+        m.remove();
+      }
+      currentMarkers.value[t] = [];
+    }
+  } else {
+    const trailMarkers = currentMarkers.value[trailId];
+    if (!trailMarkers) return;
+    for (const marker of trailMarkers) {
+      console.log("removing markers");
+      console.log("marker is ", marker);
+      marker.remove();
+    }
+    currentMarkers.value[trailId] = [];
+  }
+}
+
+function handleFlyTo(trailId, locIndex) {
+  const trail = props.trails.find((t) => t._id === trailId);
+  const loc = trail.locations[locIndex];
+  flyToPoint(loc.lng, loc.lat);
+}
+
 function mapMarkers(trail) {
+  let color;
+  if (currentUsername.value === trail.author) {
+    color = "mine";
+  } else if (friends.value.includes(trail.author)) {
+    color = "friend";
+  } else {
+    color = "other";
+  }
+
+  const draggable = trail.author === currentUsername.value;
   for (const [index, loc] of trail.locations.entries()) {
     let el = document.createElement("div");
-    el.className = "marker";
+    el.className = `marker ${color}`;
+
     el.id = `marker-${trail._id}-${loc.post}`;
     el.onclick = () => {
       showCard.value = true;
@@ -192,20 +236,87 @@ function mapMarkers(trail) {
         trailId: trail._id,
         postIndex: index,
       };
-      flyToPoint(loc.lng, loc.lat);
+      handleFlyTo(trail._id, index);
     };
     //     el.innerHTML = `
     //     <span class="marker-label">${index + 1}</span>
     //   `;
     const marker = new mapboxgl.Marker({
       element: el,
+      draggable: draggable,
     })
       .setLngLat({ lng: loc.lng, lat: loc.lat })
       .addTo(map);
+
+    async function onDragEnd() {
+      const lngLat = marker.getLngLat();
+
+      // get the set of coordinates at this index of the location
+      const originalLocation = trail.locations[index];
+
+      const newLocation = { ...originalLocation, lng: lngLat.lng, lat: lngLat.lat };
+
+      const trailLocations = trail.locations;
+      trailLocations[index] = newLocation;
+
+      const newTrail = { ...trail, locations: trailLocations };
+
+      // get adjusted waypoints and route from mapTrail function
+
+      if (trailLocations.length > 1) {
+        const directions = await getDirections(newTrail);
+        const routes = directions.routes;
+        mapRoute(trail, routes[0].geometry.coordinates);
+        let adjustedTrail = newTrail;
+        for (let i = 0; i < directions.waypoints.length; i++) {
+          let adjustedLocation = adjustedTrail.locations[i];
+          adjustedLocation.lng = directions.waypoints[i].location[0];
+          adjustedLocation.lat = directions.waypoints[i].location[1];
+          adjustedTrail.locations[i] = adjustedLocation;
+        }
+
+        await fetchy(`/api/trails/${trail._id}`, "PATCH", { body: { locations: adjustedTrail.locations } });
+        emit("refreshTrails");
+
+        clearAllMarkers(trail._id);
+        mapMarkers(adjustedTrail);
+        flyTo(directions.waypoints[index].location);
+      } else {
+        await fetchy(`/api/trails/${trail._id}`, "PATCH", { body: { locations: trailLocations } });
+        emit("refreshTrails");
+        clearAllMarkers(trail._id);
+        mapMarkers(newTrail);
+        flyTo(trailLocations[0]);
+      }
+    }
+
+    marker.on("dragend", onDragEnd);
+    let trailMarkers = currentMarkers.value[`${trail._id}`];
+    if (trailMarkers) {
+      trailMarkers.push(marker);
+    } else {
+      trailMarkers = [marker];
+    }
+
+    currentMarkers.value[`${trail._id}`] = trailMarkers;
   }
 }
 
 function mapRoute(trail, route) {
+  if (map.getLayer(`trail-${trail._id}`)) {
+    map.removeLayer(`trail-${trail._id}`);
+    map.removeSource(`trail-${trail._id}`);
+  }
+
+  let color;
+  if (currentUsername.value === trail.author) {
+    color = COLOR_MAP.mine;
+  } else if (friends.value.includes(trail.author)) {
+    color = COLOR_MAP.friend;
+  } else {
+    color = COLOR_MAP.other;
+  }
+
   const geojson = {
     type: "Feature",
     properties: {},
@@ -228,19 +339,20 @@ function mapRoute(trail, route) {
       "line-cap": "round",
     },
     paint: {
-      "line-color": "#FF8888",
+      "line-color": color,
       "line-width": 5,
       "line-opacity": 0.75,
     },
   });
+
+  currentTrails.value.push(layerId);
 }
 
 async function mapTrail(trail) {
-  let points;
-
+  clearAllMarkers(trail._id);
   // if trail has no points
   if (trail.locations.length === 0) {
-    return;
+    return trail.locations;
   }
   // if trail has 1 point
   if (trail.locations.length < 2) {
@@ -251,6 +363,17 @@ async function mapTrail(trail) {
     const routes = directions.routes;
     mapRoute(trail, routes[0].geometry.coordinates);
   }
+}
+
+async function getTrails() {
+  loading.value = true;
+
+  const trailPromises = props.trails.map(async (trail) => {
+    return await mapTrail(trail);
+  });
+
+  await Promise.all(trailPromises);
+  loading.value = false;
 }
 
 function getCoordinates(trail) {
@@ -273,11 +396,64 @@ async function handleDeletePost(postId) {
 
   post.value = undefined;
 
-  emit("updaTrailWithoutPost", trail.value._id, selected.value.postIndex);
+  // emit("refreshTrails", trail.value._id, selected.value.postIndex);
+  emit("refreshTrails");
+  // await getTrails();
 }
 
+// watchEffect(async () => {
+//   console.log(`detected change in trails prop`, props.trails);
+
+//   const trailIds = props.trails.map((t) => {
+//     return t._id;
+//   });
+
+//   const toDelete = currentTrails.value.filter((t) => !trailIds.includes(t));
+
+//   for (const trailId of toDelete) {
+//     if (map.getLayer(`trail-${trailId}`)) {
+//       console.log("SOURCE FOR TRAIL ", trailId);
+//       map.removeLayer(`trail-${trailId}`);
+//       map.removeSource(`trail-${trailId}`);
+//     }
+//     clearAllMarkers(trailId);
+//   }
+
+//   await getTrails();
+// });
+
+watch(
+  () => props.trails,
+  async (newTrails, oldTrails) => {
+    console.log(`detected change in trails prop`, newTrails);
+
+    const trailIds = newTrails.map((t) => {
+      return t._id;
+    });
+
+    const layerIds = currentTrails.value.map((t) => {
+      return t.split("-")[1];
+    });
+
+    const toDelete = layerIds.filter((t) => !trailIds.includes(t));
+
+    console.log("toDelete ", toDelete);
+
+    for (const trailId of toDelete) {
+      if (map.getLayer(`trail-${trailId}`)) {
+        map.removeLayer(`trail-${trailId}`);
+        map.removeSource(`trail-${trailId}`);
+      }
+
+      clearAllMarkers(trailId);
+    }
+
+    await getTrails();
+  },
+);
+
 async function handleCreatePost(content, media) {
-  const res = await fetchy(`/api/posts`, "POST", { body: { content, media } });
+  const res = await fetchy(`/api/posts`, "POST", { body: { content, media, event: undefined } });
 
   // get post id to associate with trail
   const postId = res.post._id;
@@ -299,25 +475,53 @@ async function handleCreatePost(content, media) {
 
   // emit to parent to update list of trails
   selectedPostId.value = postId;
-  emit("updateTrailWithPost", trail.value._id, selected.value.postIndex, newLocations);
+  emit("refreshTrails");
 
   await getPost(postId);
+  // await getTrails();
+}
+
+async function handleDeleteTrail(trailId) {
+  await fetchy(`/api/trails/${trailId}`, "DELETE");
+
+  showCard.value = false;
+  selected.value = { trailId: null, postIndex: null };
+
+  emit("refreshTrails");
 }
 </script>
 
 <template>
   <div :id="props.mapRef" class="mapContainer"></div>
+  <v-sheet class="legend" :elevation="2">
+    <h6>Legend</h6>
+    <div>
+      <div class="mine"></div>
+      <p>My trail</p>
+    </div>
+    <div>
+      <div class="friend"></div>
+      <p>My friend's trail</p>
+    </div>
+    <div>
+      <div class="other"></div>
+      <p>Someone else's trail</p>
+    </div>
+  </v-sheet>
   <div v-if="!loading">
     <v-sheet v-if="showCard" rounded class="post-sheet">
       <div v-if="trail">
         <div class="row">
-          <h3>{{ trail.name }}</h3>
+          <div class="row row-gap">
+            <h3>{{ trail.name }}</h3>
+            <v-icon v-if="currentUsername === trail.author" @click="handleDeleteTrail(trail._id)" color="error">mdi-delete-outline</v-icon>
+          </div>
           <v-icon @click="closeForm">mdi-close</v-icon>
         </div>
 
         <!-- TODO: clicking on author takes them to their profile -->
 
-        <!-- <h4>{{ trail.author }}</h4> -->
+        <h4>{{ trail.author }}</h4>
         <h6>{{ trail.distance }} miles</h6>
         <h6>{{ trail.duration }} hours</h6>
         <h6 v-if="post && selectedPostId">{{ getCoordinates(trail) }}</h6>
@@ -325,17 +529,39 @@ async function handleCreatePost(content, media) {
 
       <PostComponent v-if="post" :post="post" @handleDeletePost="handleDeletePost" />
       <div v-else class="gap">
-        <CreatePostForm @handleCreatePost="handleCreatePost" />
+        <CreatePostForm v-if="currentUsername === trail.author" @handleCreatePost="handleCreatePost" />
         <div class="center background">No post found for this location!</div>
       </div>
     </v-sheet>
   </div>
-  <div v-else>
+  <div v-else-if="loading && showCard">
     <v-sheet class="load-sheet post-sheet"> <v-progress-circular indeterminate color="#95b08d"></v-progress-circular> </v-sheet>
   </div>
 </template>
-this.map.resize();
+
 <style scoped>
+.legend {
+  position: absolute;
+  padding: 1em;
+  bottom: 2em;
+  left: 2em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.legend > div {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+  font-size: 12px;
+  align-items: center;
+}
+
+.legend > div > div {
+  padding: 0.5em;
+  aspect-ratio: 1;
+}
 .center {
   align-items: center;
   justify-content: center;
@@ -364,17 +590,6 @@ this.map.resize();
   gap: 1em;
 }
 
-.marker {
-  border-radius: 50%;
-  height: 20px;
-  width: 20px;
-  background-color: #e46363;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-}
-
 .post-sheet {
   display: flex;
   flex-direction: column;
@@ -392,5 +607,9 @@ this.map.resize();
 .load-sheet.post-sheet {
   justify-content: center;
   align-items: center;
+}
+
+.row-gap {
+  gap: 0.5em;
 }
 </style>

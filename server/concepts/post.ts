@@ -6,17 +6,18 @@ import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 export interface PostDoc extends BaseDoc {
   author: ObjectId;
   content: string;
+  event: ObjectId | undefined;
   media?: string;
 }
 
 export default class PostConcept {
   public readonly posts = new DocCollection<PostDoc>("posts");
 
-  async create(author: ObjectId, content: string, media?: string) {
+  async create(author: ObjectId, content: string, event: ObjectId | undefined, media?: string) {
     if (!content) {
       throw new PostContentEmptyError();
     }
-    const _id = await this.posts.createOne({ author, content, media });
+    const _id = await this.posts.createOne({ author, content, media, event });
     return { msg: "Post successfully created!", post: await this.posts.readOne({ _id }) };
   }
 

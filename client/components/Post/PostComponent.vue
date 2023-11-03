@@ -19,9 +19,6 @@ const { currentUsername } = storeToRefs(useUserStore());
       <div class="base">
         <menu v-if="props.post.author == currentUsername">
           <li>
-            <button class="btn-small" @click="emit('editPost', props.post._id)"><v-icon>mdi-pencil</v-icon></button>
-          </li>
-          <li>
             <button class="button-error btn-small" @click="emit(`handleDeletePost`, props.post._id)"><v-icon>mdi-close</v-icon></button>
           </li>
         </menu>
@@ -47,7 +44,7 @@ const { currentUsername } = storeToRefs(useUserStore());
   padding: 0 1em;
 }
 .background {
-  background-color: #95b08d24;
+  background-color: #95b08d65;
   border-radius: 1em;
   display: flex;
   flex-direction: column;

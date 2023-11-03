@@ -14,7 +14,7 @@ const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 
 // TODO: eventId --> props in dynamic routing
 // let eventId = "kjfdsv"; //6541cf2c8886d3cd24bb33c0
-let eventId = "65432c3d6afa0793764df2e7"; //6541cf2c8886d3cd24bb33c0
+let eventId = "6544626503daf4524bfb78fd"; //6541cf2c8886d3cd24bb33c0
 
 let loaded = ref(false);
 let event = ref(undefined);
@@ -35,6 +35,7 @@ async function getEvent() {
 async function getEventAttendees() {
   const fetchedAttendees = await fetchy(`/api/events/${eventId}/attendees`, "GET");
   attendees.value = fetchedAttendees;
+  console.log("fetchedAttendees ", fetchedAttendees);
 }
 
 async function getEventTrail(trailId) {
@@ -74,6 +75,16 @@ const unregisterEvent = async () => {
 
   registered.value = false;
 };
+
+const deleteEvent = async () => {
+  try {
+    await fetchy(`api/events/${event.value._id}`, "DELETE");
+  } catch {
+    return;
+  }
+
+  event.value = undefined;
+};
 </script>
 
 <template>
@@ -82,7 +93,7 @@ const unregisterEvent = async () => {
       <v-col md="7" class="details-section col">
         <div class="row title">
           <div class="date-tile">
-            <h2>{{ abbreviateMonth(parseInt(event.date.month)) }}</h2>
+            <h3>{{ abbreviateMonth(parseInt(event.date.month)) }}</h3>
             <h1>{{ event.date.date }}</h1>
           </div>
           <div>
@@ -90,7 +101,8 @@ const unregisterEvent = async () => {
             <h2>Hosted by {{ event.owner }}</h2>
             <h3>{{ formatTime(event.time.hour, event.time.minute, event.time.am) }}</h3>
             <div class="row">
-              <button v-if="registered" @click="unregisterEvent">Unregister</button>
+              <button v-if="event.owner === currentUsername" @click="deleteEvent">Delete Event</button>
+              <button v-else-if="registered" @click="unregisterEvent">Unregister</button>
               <button v-else @click="registerEvent">Register</button>
             </div>
           </div>
@@ -172,7 +184,8 @@ const unregisterEvent = async () => {
       <v-col md="5">
         <div class="event-feed col">
           <h3 class="white">Discussions</h3>
-          <EventFeedComponent :postIds="event.posts" :eventId="event._id" />
+          <EventFeedComponent v-if="registered" :postIds="event.posts" :eventId="event._id" />
+          <div v-else center class="error"><v-progress-circular indeterminate color="white"></v-progress-circular></div>
         </div>
       </v-col>
     </v-row>
@@ -193,6 +206,7 @@ const unregisterEvent = async () => {
   flex-direction: column;
   padding: 2em;
   width: fit-content;
+  align-items: center;
 }
 .date-tile > * {
   margin: 0;

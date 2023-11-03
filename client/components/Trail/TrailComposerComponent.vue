@@ -127,6 +127,8 @@ function updateMarkerLocation(update) {
 
     <v-divider vertical />
     <v-col class="trail-fields-container">
+      <small>Add locations and drag them on the map to create your trail. Trails will automatically be corrected to follow existing trails in real life!</small>
+
       <div class="map-container">
         <MapVisualizerComponent
           mapRef="trail-composer-map"
