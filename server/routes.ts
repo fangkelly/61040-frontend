@@ -229,7 +229,7 @@ class Routes {
       const locations = eventTrail?.locations;
       if (locations) {
         await Event.register(_id, user);
-        return await Trail.create(user, event?.name, event?.description, locations, eventTrail.duration, eventTrail.distance);
+        return await Trail.create(user, event?.name, event?.description, locations, eventTrail.duration, eventTrail.distance, false);
       } else {
         throw new NotFoundError("Could not register event for user");
       }
