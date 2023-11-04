@@ -3,7 +3,7 @@ import EventPreviewComponent from "@/components/Event/EventPreviewComponent.vue"
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";
-import { computed, onBeforeMount, ref } from "vue";
+import { computed, defineProps, onBeforeMount, ref } from "vue";
 import MapInteractiveComponent from "../components/Map/MapInteractiveComponent.vue";
 import { useFriendStore } from "../stores/friend";
 import { filterFutureDateTime, sortAscendingDateTime } from "../utils/formatDate";
@@ -11,12 +11,11 @@ const { friends, requests } = storeToRefs(useFriendStore());
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 const friendStore = useFriendStore();
 
-const props = defineProps(["username"]);
-const username = "k";
+const props = defineProps(["user"]);
 const loaded = ref(false);
 
 const friendshipStatus = computed(() => {
-  const friendship = requests.value.find((req) => req.to === username && req.from === currentUsername.value);
+  const friendship = requests.value.find((req) => req.to === props.user && req.from === currentUsername.value);
   if (friendship) {
     return friendship.status;
   } else {
@@ -31,7 +30,7 @@ let allTrails = ref<Array<Record<string, string>>>([]); // all of the user's tra
 async function getUpcomingEvents() {
   let registeredEvents;
   try {
-    registeredEvents = await fetchy(`/api/events/registered`, "GET", { query: { user: username } });
+    registeredEvents = await fetchy(`/api/events/registered`, "GET", { query: { user: props.user } });
   } catch (_) {
     return;
   }
@@ -44,8 +43,7 @@ async function getUpcomingEvents() {
 async function getAllTrails() {
   let usersTrails;
   try {
-    console.log("in get allt rails for map interactive");
-    usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: username, event: undefined } });
+    usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: props.user, event: undefined } });
   } catch (_) {
     return;
   }
@@ -54,7 +52,6 @@ async function getAllTrails() {
 }
 
 onBeforeMount(async () => {
-  console.log("onBeforeMount");
   await getUpcomingEvents();
   await getAllTrails();
   loaded.value = true;
@@ -81,17 +78,17 @@ async function handleRemoveRequest(username) {
     <div v-if="loaded" class="col">
       <section id="profile-section">
         <div class="row">
-          <h1>{{ username }}</h1>
+          <h1>{{ props.user }}</h1>
           <!-- If the user is friends with the profile owner -->
-          <button v-if="friends.includes(currentUsername)" @click="handleRemoveFriend(username)">Remove Friend</button>
+          <button v-if="friends.includes(currentUsername)" @click="handleRemoveFriend(props.user)">Remove Friend</button>
 
           <!-- If the user send a request to the profile owner -->
-          <button v-else-if="friendshipStatus === `pending`" @click="handleRemoveRequest(username)">
+          <button v-else-if="friendshipStatus === `pending`" @click="handleRemoveRequest(props.user)">
             <p>Remove Friend Request</p>
           </button>
 
           <!-- If the user has not sent a request or a request has been rejected -->
-          <button v-else-if="username !== currentUsername" @click="handleSendRequest(username)">Send Friend Request</button>
+          <button v-else-if="props.user !== currentUsername" @click="handleSendRequest(props.user)">Send Friend Request</button>
         </div>
         <div class="row">
           <p>{{ allTrails.length }} trails hiked</p>
@@ -125,8 +122,8 @@ async function handleRemoveRequest(username) {
       <section>
         <div>
           <h3>All Trails</h3>
-          <p v-if="username === currentUsername">Drag the points to reformat your trail. The API will reposition your points and compute a route based on what footpaths exist in the real world!</p>
-          <p v-else>See where {{ username }} has been! Click on a point to see what {{ username }} posted at that location.</p>
+          <p v-if="props.user === currentUsername">Drag the points to reformat your trail. The API will reposition your points and compute a route based on what footpaths exist in the real world!</p>
+          <p v-else>See where {{ props.user }} has been! Click on a point to see what {{ props.user }} posted at that location.</p>
         </div>
         <div class="map-container">
           <MapInteractiveComponent mapRef="profile-map-container" :trails="allTrails" @refreshTrails="getAllTrails" />

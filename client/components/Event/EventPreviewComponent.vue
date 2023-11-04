@@ -4,6 +4,7 @@ import { storeToRefs } from "pinia";
 import { onBeforeMount, ref } from "vue";
 import { fetchy } from "../../utils/fetchy";
 import { abbreviateMonth, formatTime } from "../../utils/formatDate";
+const { isLoggedIn } = storeToRefs(useUserStore());
 
 const props = defineProps(["event"]);
 const { currentUsername } = storeToRefs(useUserStore());
@@ -78,14 +79,18 @@ const unregisterEvent = async () => {
     <v-divider class="border-opacity-100" vertical></v-divider>
     <div class="event-preview-right">
       <p class="event-preview-name truncate">{{ props.event.name }}</p>
-      <p class="event-preview-owner truncate">
-        Hosted by <span class="underline">{{ props.event.owner }}</span>
+      <p class="event-preview-owner truncate" v-if="props.event.owner">
+        Hosted by
+        <span class="underline">
+          <RouterLink :to="{ name: 'Profile', params: { user: props.event.owner } }">{{ props.event.owner }}</RouterLink>
+        </span>
       </p>
       <p class="event-preview-time">{{ formatTime(props.event.time.hour, props.event.time.minute, props.event.time.am) }}</p>
       <div class="row">
         <button v-if="registered" @click="unregisterEvent">Unregister</button>
-        <button v-else @click="registerEvent">Register</button>
-        <button>View Details</button>
+        <button v-else-if="isLoggedIn" @click="registerEvent">Register</button>
+
+        <RouterLink :to="{ name: 'Event', params: { id: props.event._id } }">View Details</RouterLink>
       </div>
       <div class="row">
         <p class="event-preview-members">{{ getAttendeesPreview() }}</p>
@@ -126,6 +131,11 @@ v-divider {
   justify-content: space-between;
   color: white;
   padding: 1em 0.5em;
+}
+
+a {
+  color: white;
+  font-size: 10px;
 }
 
 .event-preview-container p {

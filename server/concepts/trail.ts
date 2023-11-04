@@ -12,14 +12,13 @@ export interface TrailDoc extends BaseDoc {
   pinned: boolean;
   distance: number;
   duration: number;
-  event: boolean;
 }
 
 export default class TrailConcept {
   public readonly trails = new DocCollection<TrailDoc>("trails");
 
   /** create new trail */
-  async create(author: ObjectId, name: string, description: string, locations: Locations, duration: number, distance: number, event: boolean) {
+  async create(author: ObjectId, name: string, description: string, locations: Locations, duration: number, distance: number) {
     if (!name) {
       throw new TrailFieldMissing("name");
     }
@@ -32,7 +31,7 @@ export default class TrailConcept {
       throw new TrailFieldMissing("location");
     }
 
-    const _id = await this.trails.createOne({ author, name, description, locations, pinned: false, duration, distance, event });
+    const _id = await this.trails.createOne({ author, name, description, locations, pinned: false, duration, distance });
     return { msg: "Trail successfully created!", trail: await this.trails.readOne({ _id }) };
   }
 
@@ -63,7 +62,6 @@ export default class TrailConcept {
   }
 
   async getTrailsByAuthor(author: ObjectId) {
-    console.log("authir ", author);
     return await this.getTrails({ author });
   }
 

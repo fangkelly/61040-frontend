@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { useToastStore } from "@/stores/toast";
 import mapboxgl from "mapbox-gl";
 import { onMounted, onUnmounted, onUpdated, ref } from "vue";
@@ -15,13 +16,15 @@ const emit = defineEmits(["updateDistanceTime", "updateMarkerLocation", "updateC
 let currentMarkers = ref([]);
 
 let map;
-let { lng, lat, bearing, pitch, zoom } = { lng: -158.124, lat: 21.431, bearing: 0, pitch: 60, zoom: 12 };
+let { lng, lat, bearing, pitch, zoom } = { lng: -98.5795, lat: 39.8283, bearing: 0, pitch: 45, zoom: 4 };
 
 onMounted(() => {
   map = new mapboxgl.Map({
     container: props.mapRef,
     style: "mapbox://styles/fangk/cln4vt2gg06w901qrgym22cdp",
     center: [lng, lat],
+    projection: "globe",
+
     bearing,
     pitch,
     zoom,

@@ -5,6 +5,7 @@ import { storeToRefs } from "pinia";
 import { computed, onBeforeMount } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
 import { useFriendStore } from "./stores/friend";
+const { currentUsername } = storeToRefs(useUserStore());
 
 const currentRoute = useRoute();
 const currentRouteName = computed(() => currentRoute.name);
@@ -41,11 +42,9 @@ onBeforeMount(async () => {
           </li>
 
           <!-- TODO: Remove EVENT REOUTE WHEN DONE TESTING! -->
-          <li>
-            <RouterLink :to="{ name: 'Event' }" :class="{ underline: currentRouteName == 'Event', link: true }"> Event </RouterLink>
-          </li>
+
           <li v-if="isLoggedIn">
-            <RouterLink :to="{ name: 'Profile' }" :class="{ underline: currentRouteName == 'Profile', link: true }"> Profile </RouterLink>
+            <RouterLink :to="{ name: 'Profile', params: { user: currentUsername } }" :class="{ underline: currentRouteName == 'Profile', link: true }"> Profile </RouterLink>
           </li>
           <li v-if="isLoggedIn">
             <RouterLink :to="{ name: 'Settings' }" :class="{ underline: currentRouteName == 'Settings', link: true }"> Settings </RouterLink>

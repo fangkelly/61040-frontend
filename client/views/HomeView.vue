@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import EventComposerComponent from "@/components/Event/EventComposerComponent.vue";
+import PostListComponent from "@/components/Post/PostListComponent.vue";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref } from "vue";
@@ -18,13 +19,10 @@ async function getAllTrails() {
   let universalTrails;
   try {
     universalTrails = await fetchy(`api/trails/`, "GET", { query: {} });
-    console.log("allTrails ", universalTrails);
   } catch (_) {
     return;
   }
   allTrails.value = universalTrails;
-
-  console.log("in getAllTraisl");
 }
 
 const eventTrails = computed(() => {
@@ -59,6 +57,7 @@ onBeforeMount(async () => {
     </section>
 
     <div v-if="mapView" class="map-container"><MapInteractiveComponent :trails="usersTrails" @refreshTrails="getAllTrails" mapRef="home-map-container" /></div>
+    <div v-else class="feed-container"><PostListComponent /></div>
   </main>
 </template>
 
@@ -66,6 +65,11 @@ onBeforeMount(async () => {
 .map-container {
   position: relative;
   height: 90vh;
+}
+
+.feed-container {
+  flex: 1;
+  background-color: #95b08d;
 }
 
 h1 {

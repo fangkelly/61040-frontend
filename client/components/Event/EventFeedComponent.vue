@@ -24,7 +24,9 @@ async function getPosts() {
 
 onBeforeMount(async () => {
   await getPosts();
+
   loaded.value = true;
+  console.log("POSTS ", posts);
 });
 
 async function handleCreatePost(content: string, media?: string) {
@@ -39,9 +41,8 @@ async function handleDeletePost(postId: string) {
   const res = await fetchy(`/api/events/${props.eventId}/delete_post/${postId}`, "PATCH");
 
   // TODO: state management
-  posts.value = posts.value.filter((p) => {
-    p._id !== postId;
-  });
+  const filteredPosts = posts.value.filter((p) => p._id !== postId);
+  posts.value = filteredPosts;
 }
 </script>
 

@@ -21,7 +21,6 @@ const pendingRequests = computed(() => {
     .map((r: requestType) => {
       return r.from;
     });
-  console.log("PENDING ", pending);
   return pending;
 });
 

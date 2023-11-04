@@ -12,7 +12,9 @@ const { currentUsername } = storeToRefs(useUserStore());
 <template>
   <div class="post-container">
     <div class="background">
-      <p class="author">{{ props.post.author }}</p>
+      <p class="author">
+        <RouterLink :to="{ name: 'Profile', params: { user: props.post.author } }">{{ props.post.author }}</RouterLink>
+      </p>
       <img v-if="post.media" :src="post.media.toString('base64')" />
 
       <p>{{ props.post.content }}</p>
@@ -58,6 +60,10 @@ img {
 
 p {
   margin: 0em;
+}
+
+a {
+  color: black;
 }
 
 .author {

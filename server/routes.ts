@@ -316,10 +316,10 @@ class Routes {
 
   /** make post to an event only if the user is registered for it */
   @Router.patch("/events/:_id/post")
-  async postToEvent(session: WebSessionDoc, _id: ObjectId, body: { content: string; media?: string }) {
+  async postToEvent(session: WebSessionDoc, _id: ObjectId, body: { content: string; media?: string; event: string }) {
     const user = WebSession.getUser(session);
     await Event.isRegistered(user, _id);
-    const created = await Post.create(user, body.content, body.media);
+    const created = await Post.create(user, body.content, new ObjectId(body.event), body.media);
     await Event.addPost(_id, created.post?._id);
     return await Responses.post(created.post);
   }
@@ -334,12 +334,9 @@ class Routes {
 
   /** Trails Routes */
   @Router.post("/trails")
-  async createTrail(
-    session: WebSessionDoc,
-    body: { name: string; description: string; locations: Array<{ lat: number; lng: number; post?: ObjectId }>; duration: number; distance: number; event: boolean },
-  ) {
+  async createTrail(session: WebSessionDoc, body: { name: string; description: string; locations: Array<{ lat: number; lng: number; post?: ObjectId }>; duration: number; distance: number }) {
     const author = WebSession.getUser(session);
-    const created = await Trail.create(author, body.name, body.description, body.locations, body.distance, body.duration, body.event);
+    const created = await Trail.create(author, body.name, body.description, body.locations, body.distance, body.duration);
     return { msg: created.msg, trail: await Responses.trail(created.trail) };
   }
 
@@ -353,9 +350,7 @@ class Routes {
   @Router.get("/trails/")
   async getTrails(query: { author: string; _id: string }) {
     let trails;
-    console.log("IN GET TRAILS ROUTE");
     if (query) {
-      console.log("detected query ", query);
       if (query._id) {
         trails = await Trail.getTrails({ _id: new ObjectId(query._id) });
         return await Responses.trails(trails);
@@ -364,16 +359,13 @@ class Routes {
       if (query.author) {
         const user = await User.getUserByUsername(query.author);
         trails = await Trail.getTrailsByAuthor(user._id);
-        console.log("returned trails 0 ", trails, user._id);
         return await Responses.trails(trails);
       }
 
       trails = await Trail.getTrails({});
-      console.log("returned trails 1 ", trails);
       return await Responses.trails(trails);
     }
     trails = await Trail.getTrails({});
-    console.log("returned trails 2 ", trails);
 
     return await Responses.trails(trails);
   }

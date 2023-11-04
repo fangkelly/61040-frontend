@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import imageCompression from "browser-image-compression";
 import { onMounted, ref } from "vue";
 

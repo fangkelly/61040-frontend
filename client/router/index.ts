@@ -18,15 +18,17 @@ const router = createRouter({
       component: HomeView,
     },
     {
-      path: "/profile",
+      path: "/profile/:user",
       name: "Profile",
       component: ProfileView,
+      props: true,
       meta: { requiresAuth: true },
     },
     {
-      path: "/event",
+      path: "/event/:id",
       name: "Event",
       component: EventView,
+      props: true,
       meta: { requiresAuth: true },
     },
     {

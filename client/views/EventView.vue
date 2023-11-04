@@ -10,11 +10,7 @@ import { fetchy } from "../utils/fetchy";
 import { abbreviateMonth, formatTime } from "../utils/formatDate";
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 
-// const props = defineProps(["eventId"]);
-
-// TODO: eventId --> props in dynamic routing
-// let eventId = "kjfdsv"; //6541cf2c8886d3cd24bb33c0
-let eventId = "6544626503daf4524bfb78fd"; //6541cf2c8886d3cd24bb33c0
+const props = defineProps(["id"]);
 
 let loaded = ref(false);
 let event = ref(undefined);
@@ -23,9 +19,8 @@ let registered = ref(false);
 let trail = ref([]);
 
 async function getEvent() {
-  const fetchedEvent = await fetchy("/api/events/", "GET", { query: { _id: eventId } });
+  const fetchedEvent = await fetchy("/api/events/", "GET", { query: { _id: props.id } });
   event.value = fetchedEvent[0];
-  console.log(event.value);
 
   if (fetchedEvent[0]) {
     await getEventTrail(fetchedEvent[0].trail);
@@ -33,9 +28,8 @@ async function getEvent() {
 }
 
 async function getEventAttendees() {
-  const fetchedAttendees = await fetchy(`/api/events/${eventId}/attendees`, "GET");
+  const fetchedAttendees = await fetchy(`/api/events/${props.id}/attendees`, "GET");
   attendees.value = fetchedAttendees;
-  console.log("fetchedAttendees ", fetchedAttendees);
 }
 
 async function getEventTrail(trailId) {
@@ -152,7 +146,7 @@ const deleteEvent = async () => {
         </article>
 
         <article>
-          <h3>Tags</h3>
+          <h3 v-if="event.tags.difficulty.length > 0 || event.tags.terrain.length > 0 || event.tags.activity.length > 0 || event.tags.other.length > 0">Tags</h3>
           <div v-if="event.tags.difficulty.length > 0">
             <h5>Difficulty</h5>
             <div class="row">
@@ -185,7 +179,7 @@ const deleteEvent = async () => {
         <div class="event-feed col">
           <h3 class="white">Discussions</h3>
           <EventFeedComponent v-if="registered" :postIds="event.posts" :eventId="event._id" />
-          <div v-else center class="error"><v-progress-circular indeterminate color="white"></v-progress-circular></div>
+          <div v-else center class="error">Register for the event to view posts!</div>
         </div>
       </v-col>
     </v-row>

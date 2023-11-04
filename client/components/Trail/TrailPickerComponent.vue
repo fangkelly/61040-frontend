@@ -8,7 +8,6 @@ let distance = ref(0);
 let duration = ref(0);
 
 const eventTrails = computed(() => {
-  console.log(props.trails);
   const filteredTrails = props.trails.filter((t) => t.event);
   return filteredTrails;
 });

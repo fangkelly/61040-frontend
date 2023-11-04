@@ -23,7 +23,7 @@ export default class PostConcept {
 
   async getPosts(query: Filter<PostDoc>) {
     const posts = await this.posts.readMany(query, {
-      sort: { dateUpdated: 1 },
+      sort: { dateUpdated: -1 },
     });
     return posts;
   }

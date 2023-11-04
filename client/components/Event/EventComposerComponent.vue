@@ -139,7 +139,6 @@ const createEvent = async () => {
       locations: trailJSON,
       distance: trailDistance.value,
       duration: trailDuration.value,
-      event: true,
     };
   } else {
     const trailJSON = JSON.parse(JSON.stringify(selectedTrail.value));
@@ -150,7 +149,6 @@ const createEvent = async () => {
       locations: trailJSON.locations,
       distance: trailJSON.distance,
       duration: trailJSON.duration,
-      event: true,
     };
   }
 
@@ -301,7 +299,6 @@ function toggleForm() {
             :duration-value="trailDuration"
             @update:corrected-trail-value="
               (trail) => {
-                console.log(`in update corrected trail value`);
                 correctTrail = trail;
               }
             "

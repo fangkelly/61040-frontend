@@ -19,7 +19,9 @@ const deleteComment = async () => {
 </script>
 
 <template>
-  <p class="author">{{ props.comment.author }}</p>
+  <p class="author">
+    <RouterLink :to="{ name: 'Profile', params: { user: props.comment.author } }"> {{ props.comment.author }}</RouterLink>
+  </p>
   <p>{{ props.comment.content }}</p>
   <div class="base">
     <menu v-if="props.comment.author == currentUsername">
@@ -57,6 +59,10 @@ menu {
   justify-content: flex-end;
   font-size: 0.9em;
   font-style: italic;
+}
+
+a {
+  color: black;
 }
 
 .base {

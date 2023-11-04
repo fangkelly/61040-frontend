@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { useUserStore } from "@/stores/user";
 import mapboxgl from "mapbox-gl";
 import { storeToRefs } from "pinia";
@@ -25,8 +26,7 @@ const COLOR_MAP = {
   other: "#ce8aff",
 };
 
-// TODO: compute center and bounding box to capture ALL points -- set it in mount?
-let { lng, lat, bearing, pitch, zoom } = { lng: -158.124, lat: 21.431, bearing: 0, pitch: 60, zoom: 12 };
+let { lng, lat, bearing, pitch, zoom } = { lng: -98.5795, lat: 39.8283, bearing: 0, pitch: 45, zoom: 4 };
 
 let map;
 let selectedPostId = ref();
@@ -67,6 +67,7 @@ onMounted(() => {
     container: props.mapRef,
     style: "mapbox://styles/fangk/cln4vt2gg06w901qrgym22cdp",
     center: [lng, lat],
+    projection: "globe",
     bearing,
     pitch,
     zoom,
@@ -187,7 +188,6 @@ async function getDirections(trail) {
 /** mapping functions */
 
 function clearAllMarkers(trailId?: string) {
-  console.log("in clear all markers");
   if (!trailId) {
     for (const [t, markers] of Object.entries(currentMarkers.value)) {
       for (const m of markers) {
@@ -199,8 +199,6 @@ function clearAllMarkers(trailId?: string) {
     const trailMarkers = currentMarkers.value[trailId];
     if (!trailMarkers) return;
     for (const marker of trailMarkers) {
-      console.log("removing markers");
-      console.log("marker is ", marker);
       marker.remove();
     }
     currentMarkers.value[trailId] = [];
@@ -425,8 +423,6 @@ async function handleDeletePost(postId) {
 watch(
   () => props.trails,
   async (newTrails, oldTrails) => {
-    console.log(`detected change in trails prop`, newTrails);
-
     const trailIds = newTrails.map((t) => {
       return t._id;
     });
@@ -436,8 +432,6 @@ watch(
     });
 
     const toDelete = layerIds.filter((t) => !trailIds.includes(t));
-
-    console.log("toDelete ", toDelete);
 
     for (const trailId of toDelete) {
       if (map.getLayer(`trail-${trailId}`)) {

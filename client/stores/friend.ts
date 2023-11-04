@@ -15,14 +15,11 @@ export const useFriendStore = defineStore(
     const requests: requestType[] = ref([]);
 
     const updateFriends = async () => {
-      console.log("UPDATE FRIENDS ", friends);
-
       const friendsList = await fetchy("/api/friends", "GET", { alert: false });
       friends.value = friendsList;
     };
 
     const updateRequests = async () => {
-      console.log("UPDATE REQUESTS ", requests);
       const requestsList = await fetchy("/api/friend/requests", "GET", { alert: false });
       requests.value = requestsList;
     };

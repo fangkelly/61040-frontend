@@ -134,7 +134,9 @@ export default class EventConcept {
     if (!event.attendees.indexOf(user)) {
       throw new AlreadyUnregisteredError(user, _id);
     } else {
-      const attendees = event.attendees.filter((a) => a !== user);
+      console.log("event.attendees ", event.attendees);
+      const attendees = event.attendees.filter((a) => a.toString() !== user.toString());
+      console.log("attendees ", attendees);
       await this.update(_id, { attendees });
       return { msg: `User ${user} unregistered for Event ${_id} successfully!` };
     }
