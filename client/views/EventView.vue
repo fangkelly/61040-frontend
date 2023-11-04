@@ -3,7 +3,7 @@
 import Tag from "@/components/Event/TagComponent.vue";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
-import { onBeforeMount, ref } from "vue";
+import { computed, onBeforeMount, ref } from "vue";
 import AttendeeCard from "../components/Event/AttendeeCardComponent.vue";
 import EventFeedComponent from "../components/Event/EventFeedComponent.vue";
 import MapVisualizerComponent from "../components/Map/MapVisualizerComponent.vue";
@@ -16,7 +16,16 @@ const props = defineProps(["id"]);
 let loaded = ref(false);
 let event = ref(undefined);
 let attendees = ref();
-let registered = ref(false);
+let registered = computed(() => {
+  if (attendees.value) {
+    return attendees.value
+      .map((a) => {
+        return a.username;
+      })
+      .includes(currentUsername.value);
+  }
+  return false;
+});
 let trail = ref([]);
 
 async function getEvent() {
@@ -41,11 +50,6 @@ onBeforeMount(async () => {
   await getEvent();
   if (event.value) {
     await getEventAttendees();
-    registered.value = attendees.value
-      .map((a) => {
-        return a.username;
-      })
-      .includes(currentUsername.value);
   }
 
   loaded.value = true;
@@ -58,7 +62,7 @@ const registerEvent = async () => {
     return;
   }
 
-  registered.value = true;
+  await getEventAttendees();
 };
 
 const unregisterEvent = async () => {
@@ -68,7 +72,7 @@ const unregisterEvent = async () => {
     return;
   }
 
-  registered.value = false;
+  await getEventAttendees();
 };
 
 const deleteEvent = async () => {

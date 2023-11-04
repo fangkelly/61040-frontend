@@ -2,7 +2,7 @@
 // @ts-nocheck
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
-import { onBeforeMount, ref } from "vue";
+import { computed, onBeforeMount, ref } from "vue";
 import { fetchy } from "../../utils/fetchy";
 import { abbreviateMonth, formatTime } from "../../utils/formatDate";
 const { isLoggedIn } = storeToRefs(useUserStore());
@@ -13,11 +13,19 @@ const { currentUsername } = storeToRefs(useUserStore());
 const loaded = ref(false);
 
 let attendees = ref<Array>([]);
-let registered = ref(false);
+let registered = computed(() => {
+  if (attendees.value) {
+    return attendees.value
+      .map((a) => {
+        return a.username;
+      })
+      .includes(currentUsername.value);
+  } else {
+    return false;
+  }
+});
 
 async function getAttendees() {
-  console.log("get attendees");
-
   let users;
   try {
     users = await fetchy(`/api/events/${props.event._id}/attendees`, "GET");
@@ -25,7 +33,6 @@ async function getAttendees() {
     return;
   }
   attendees.value = users;
-  console.log("attendees users ", users);
 }
 
 const getAttendeesPreview = () => {
@@ -43,12 +50,6 @@ const getAttendeesPreview = () => {
 
 onBeforeMount(async () => {
   await getAttendees();
-  loaded.value = true;
-  registered.value = attendees.value
-    .map((a) => {
-      return a.username;
-    })
-    .includes(currentUsername.value);
 
   loaded.value = true;
 });
@@ -60,7 +61,7 @@ const registerEvent = async () => {
     return;
   }
 
-  registered.value = true;
+  await getAttendees();
 };
 
 const unregisterEvent = async () => {
@@ -70,7 +71,7 @@ const unregisterEvent = async () => {
     return;
   }
 
-  registered.value = false;
+  await getAttendees();
 };
 </script>
 
