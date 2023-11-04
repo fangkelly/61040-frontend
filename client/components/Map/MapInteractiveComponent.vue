@@ -513,6 +513,8 @@ async function handleDeleteTrail(trailId) {
           <v-icon @click="closeForm">mdi-close</v-icon>
         </div>
 
+        <i>{{ trail.description }}</i>
+
         <!-- TODO: clicking on author takes them to their profile -->
 
         <h4>
