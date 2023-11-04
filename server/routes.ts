@@ -334,9 +334,12 @@ class Routes {
 
   /** Trails Routes */
   @Router.post("/trails")
-  async createTrail(session: WebSessionDoc, body: { name: string; description: string; locations: Array<{ lat: number; lng: number; post?: ObjectId }>; duration: number; distance: number }) {
+  async createTrail(
+    session: WebSessionDoc,
+    body: { name: string; description: string; locations: Array<{ lat: number; lng: number; post?: ObjectId }>; duration: number; distance: number; event: boolean },
+  ) {
     const author = WebSession.getUser(session);
-    const created = await Trail.create(author, body.name, body.description, body.locations, body.distance, body.duration);
+    const created = await Trail.create(author, body.name, body.description, body.locations, body.distance, body.duration, body.event);
     return { msg: created.msg, trail: await Responses.trail(created.trail) };
   }
 
