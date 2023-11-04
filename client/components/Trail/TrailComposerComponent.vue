@@ -105,7 +105,7 @@ function updateMarkerLocation(update) {
 
 <template>
   <v-row class="trail-form-row">
-    <v-col class="trail-fields-container" cols="6">
+    <v-col class="trail-fields-container" md="6">
       <!-- <input v-model="name" /> -->
       <v-text-field v-model="name" label="Trail name" color="#95b08d" variant="outlined" :rules="nameRules" />
       <v-text-field v-model="description" label="Trail description" color="#95b08d" variant="outlined" :rules="descriptionRules" />
@@ -127,7 +127,7 @@ function updateMarkerLocation(update) {
     </v-col>
 
     <v-divider vertical />
-    <v-col class="trail-fields-container">
+    <v-col class="trail-fields-container" md="6">
       <small>Add locations and drag them on the map to create your trail. Trails will automatically be corrected to follow existing trails in real life!</small>
 
       <div class="map-container">

@@ -66,12 +66,12 @@ onBeforeMount(async () => {
 
 <template>
   <div class="feed-container">
-    <div class="row">
-      <div class="col">
+    <v-row>
+      <v-col class="col" md="4">
         <h3>All Events</h3>
         <EventPreviewComponent v-for="event in events" :event="event" :key="event._id" />
-      </div>
-      <div class="col discussions">
+      </v-col>
+      <v-col class="col discussions" md="8">
         <h3>Discussions</h3>
         <div class="col">
           <div v-if="isLoggedIn" class="background"><CreatePostForm @handle-create-post="handleCreatePost" /></div>
@@ -79,16 +79,16 @@ onBeforeMount(async () => {
           <!-- <div><PostComponent v-for="post in posts" :key="post._id" @handle-delete-post="handleDeletePost" /></div -->
           <div class="posts-list-container col"><PostComponent class="background" @handleDeletePost="handleDeletePost" v-for="post in posts" :post="post" :key="post._id" /></div>
         </div>
-      </div>
-    </div>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
 <style scoped>
-.discussions {
+/* .discussions {
   width: 100%;
   min-width: 0;
-}
+} */
 
 .col {
   display: flex;

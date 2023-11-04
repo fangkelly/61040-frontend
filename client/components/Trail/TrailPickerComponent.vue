@@ -44,7 +44,7 @@ const trailSelectRules = [
 
 <template>
   <v-row>
-    <v-col>
+    <v-col md="6">
       <v-select
         color="#95b08d"
         variant="outlined"
@@ -64,7 +64,7 @@ const trailSelectRules = [
         <p>Estimated time: {{ duration }} hours</p>
       </div>
     </v-col>
-    <v-col>
+    <v-col md="6">
       <div class="section map-container">
         <MapVisualizerComponent mapRef="trail-picker-map" :trails="[selectedTrail]" @updateDistanceTime="updateDistanceTime" :draggable="false" />
       </div>

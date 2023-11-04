@@ -592,10 +592,11 @@ async function handleDeleteTrail(trailId) {
   top: 2em;
   right: 2em;
   padding: 1em;
-  width: 40%;
+  max-width: 40%;
   height: calc(100% - 4em);
   overflow-y: scroll;
   background-color: #ffffffe9;
+  min-width: 400px;
 }
 
 .load-sheet.post-sheet {
