@@ -16,13 +16,16 @@ let attendees = ref<Array>([]);
 let registered = ref(false);
 
 async function getAttendees() {
+  console.log("get attendees");
+
   let users;
   try {
-    users = await fetchy(`api/events/${props.event._id}/attendees`, "GET");
+    users = await fetchy(`/api/events/${props.event._id}/attendees`, "GET");
   } catch (_) {
     return;
   }
   attendees.value = users;
+  console.log("attendees users ", users);
 }
 
 const getAttendeesPreview = () => {
@@ -52,7 +55,7 @@ onBeforeMount(async () => {
 
 const registerEvent = async () => {
   try {
-    await fetchy(`api/events/${props.event._id}/register`, "PATCH");
+    await fetchy(`/api/events/${props.event._id}/register`, "PATCH");
   } catch {
     return;
   }
@@ -62,7 +65,7 @@ const registerEvent = async () => {
 
 const unregisterEvent = async () => {
   try {
-    await fetchy(`api/events/${props.event._id}/unregister`, "PATCH");
+    await fetchy(`/api/events/${props.event._id}/unregister`, "PATCH");
   } catch {
     return;
   }

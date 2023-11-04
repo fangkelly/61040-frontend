@@ -63,7 +63,6 @@
     "reflect-metadata": "^0.1.13",
     "turf": "^3.0.14",
     "vue": "^3.3.7",
-    "vue-mapbox-ts": "^0.9.8",
     "vue-router": "^4.2.4",
     "vuetify": "^3.3.4"
   },

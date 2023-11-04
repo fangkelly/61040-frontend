@@ -39,17 +39,19 @@ async function getUpcomingEvents() {
   const sortedRegisteredEvents = sortAscendingDateTime(registeredEvents);
   const futureRegisteredEvents = filterFutureDateTime(sortedRegisteredEvents);
   upcomingEvents.value = futureRegisteredEvents;
+  console.log("upcoming events ", upcomingEvents);
 }
 
 async function getAllTrails() {
   let usersTrails;
   try {
-    usersTrails = await fetchy(`api/trails/`, "GET", { query: { author: props.user, event: undefined } });
+    usersTrails = await fetchy(`/api/trails/`, "GET", { query: { author: props.user, event: false } });
   } catch (_) {
     return;
   }
   const filteredOutEvents = usersTrails.filter((t) => !t.event);
   allTrails.value = filteredOutEvents;
+  console.log("allTrails ", filteredOutEvents);
 }
 
 onBeforeMount(async () => {
