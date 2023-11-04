@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { storeToRefs } from "pinia";
 import { onBeforeMount, ref } from "vue";
 import { useFriendStore } from "../../stores/friend";

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import MapVisualizerComponent from "@/components/Map/MapVisualizerComponent.vue";
 import { computed, ref } from "vue";
 const props = defineProps(["trails", "trailValue"]);

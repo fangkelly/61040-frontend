@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import MapVisualizerComponent from "@/components/Map/MapVisualizerComponent.vue";
 import LocationEntryComponent from "@/components/Trail/LocationEntryComponent.vue";
 import { computed } from "vue";

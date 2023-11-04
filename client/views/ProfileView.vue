@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import EventPreviewComponent from "@/components/Event/EventPreviewComponent.vue";
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";

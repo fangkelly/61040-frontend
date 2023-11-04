@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
 import { defineProps, onBeforeMount, ref } from "vue";

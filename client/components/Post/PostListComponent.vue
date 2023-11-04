@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";

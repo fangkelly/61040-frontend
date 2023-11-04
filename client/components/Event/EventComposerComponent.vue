@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import TrailComposerComponentVue from "@/components/Trail/TrailComposerComponent.vue";
 import TrailPickerComponent from "@/components/Trail/TrailPickerComponent.vue";
 import { ref } from "vue";

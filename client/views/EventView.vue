@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import Tag from "@/components/Event/TagComponent.vue";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";

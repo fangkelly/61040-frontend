@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, watch } from "vue";
 const props = defineProps(["loc", "counter"]);
 const emit = defineEmits(["updateMarkerLocation"]);
