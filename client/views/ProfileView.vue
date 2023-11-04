@@ -72,6 +72,7 @@ async function handleSendRequest(username) {
 
 async function handleRemoveRequest(username) {
   await friendStore.removeFriendRequest(username);
+
   await friendStore.updateRequests();
 }
 </script>
@@ -103,7 +104,7 @@ async function handleRemoveRequest(username) {
           <v-icon color="white" size="x-small">mdi-asterisk</v-icon>
           <p>
             {{ parseInt(allTrails.reduce((accumulator, currentValue) => accumulator + currentValue.duration, 0)).toFixed(2) }}
-            miles hiked
+            hours hiked
           </p>
         </div>
       </section>

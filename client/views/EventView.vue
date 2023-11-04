@@ -53,7 +53,7 @@ onBeforeMount(async () => {
 
 const registerEvent = async () => {
   try {
-    await fetchy(`api/events/${event.value._id}/register`, "PATCH");
+    await fetchy(`/api/events/${event.value._id}/register`, "PATCH");
   } catch {
     return;
   }
@@ -63,7 +63,7 @@ const registerEvent = async () => {
 
 const unregisterEvent = async () => {
   try {
-    await fetchy(`api/events/${event.value._id}/unregister`, "PATCH");
+    await fetchy(`/api/events/${event.value._id}/unregister`, "PATCH");
   } catch {
     return;
   }
@@ -93,7 +93,14 @@ const deleteEvent = async () => {
           </div>
           <div>
             <h1>{{ event.name }}</h1>
-            <h2>Hosted by {{ event.owner }}</h2>
+            <h2>
+              Hosted by
+              <span>
+                <RouterLink :to="{ name: 'Profile', params: { user: event.owner } }">
+                  {{ event.owner }}
+                </RouterLink>
+              </span>
+            </h2>
             <h3>{{ formatTime(event.time.hour, event.time.minute, event.time.am) }}</h3>
             <div class="row">
               <button v-if="event.owner === currentUsername" @click="deleteEvent">Delete Event</button>
@@ -223,6 +230,10 @@ const deleteEvent = async () => {
 .white {
   color: white;
   background-color: #ffffff00;
+}
+
+a {
+  color: white;
 }
 
 .error {

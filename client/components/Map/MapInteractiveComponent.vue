@@ -515,7 +515,9 @@ async function handleDeleteTrail(trailId) {
 
         <!-- TODO: clicking on author takes them to their profile -->
 
-        <h4>{{ trail.author }}</h4>
+        <h4>
+          <RouterLink :to="{ name: 'Profile', params: { user: trail.author } }">{{ trail.author }}</RouterLink>
+        </h4>
         <h6>{{ trail.distance }} miles</h6>
         <h6>{{ trail.duration }} hours</h6>
         <h6 v-if="post && selectedPostId">{{ getCoordinates(trail) }}</h6>
@@ -534,6 +536,9 @@ async function handleDeleteTrail(trailId) {
 </template>
 
 <style scoped>
+a {
+  color: black;
+}
 .legend {
   position: absolute;
   padding: 1em;
