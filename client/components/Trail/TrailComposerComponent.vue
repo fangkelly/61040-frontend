@@ -126,7 +126,6 @@ function updateMarkerLocation(update) {
       </div>
     </v-col>
 
-    <v-divider vertical />
     <v-col class="trail-fields-container" md="6">
       <small>Add locations and drag them on the map to create your trail. Trails will automatically be corrected to follow existing trails in real life!</small>
 
@@ -201,9 +200,9 @@ input {
   min-height: 0;
 }
 
-.trail-form-row {
+/* .trail-form-row {
   column-gap: 0.5em;
-}
+} */
 
 #add-item-btn {
   margin: auto;
