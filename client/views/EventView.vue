@@ -135,7 +135,9 @@ const deleteEvent = async () => {
         <article>
           <h3>Who's attending</h3>
           <div class="row">
-            <AttendeeCard v-for="attendee in attendees" :key="attendee._id" :user="attendees">{{ attendee.username }}</AttendeeCard>
+            <AttendeeCard v-for="attendee in attendees" :key="attendee._id" :user="attendees">
+              <RouterLink :to="{ name: 'Profile', params: { user: attendee.username } }">{{ attendee.username }}</RouterLink>
+            </AttendeeCard>
           </div>
         </article>
 
