@@ -75,6 +75,7 @@ onBeforeMount(async () => {
         <h3>Discussions</h3>
         <div class="col">
           <div v-if="isLoggedIn" class="background"><CreatePostForm @handle-create-post="handleCreatePost" /></div>
+          <div v-else class="background">Log in to create a post!</div>
           <!-- <div><PostComponent v-for="post in posts" :key="post._id" @handle-delete-post="handleDeletePost" /></div -->
           <div class="posts-list-container col"><PostComponent class="background" @handleDeletePost="handleDeletePost" v-for="post in posts" :post="post" :key="post._id" /></div>
         </div>
