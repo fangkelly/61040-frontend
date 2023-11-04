@@ -2,7 +2,6 @@ import "@/assets/main.css";
 import "@mdi/font/css/materialdesignicons.css";
 import "material-design-icons-iconfont/dist/material-design-icons.css";
 import "purecss";
-import VueMapboxTs from "vue-mapbox-ts";
 
 import { createPinia } from "pinia";
 import piniaPluginPersistedState from "pinia-plugin-persistedstate";
@@ -31,6 +30,5 @@ app.use(pinia);
 app.use(router);
 
 app.use(vuetify);
-app.use(VueMapboxTs);
 
 app.mount("#app");
