@@ -44,12 +44,7 @@ onBeforeMount(async () => {
           <!-- TODO: Remove EVENT REOUTE WHEN DONE TESTING! -->
 
           <li v-if="isLoggedIn">
-            <RouterLink
-              :to="{ name: 'Profile', params: { user: currentUsername } }"
-              :class="{ underline: currentRouteName == `Profile` && currentRoute.fullPath === `/profile/${currentUsername}`, link: true }"
-            >
-              Profile
-            </RouterLink>
+            <RouterLink :to="{ name: 'Profile', params: { user: currentUsername } }" :class="{ underline: currentRoute.fullPath === `/profile/${currentUsername}`, link: true }"> Profile </RouterLink>
           </li>
           <li v-if="isLoggedIn">
             <RouterLink :to="{ name: 'Settings' }" :class="{ underline: currentRouteName == 'Settings', link: true }"> Settings </RouterLink>
