@@ -4,7 +4,7 @@ import EventPreviewComponent from "@/components/Event/EventPreviewComponent.vue"
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";
-import { computed, defineProps, onBeforeMount, ref } from "vue";
+import { computed, defineProps, onBeforeMount, ref, watchEffect } from "vue";
 import MapInteractiveComponent from "../components/Map/MapInteractiveComponent.vue";
 import { useFriendStore } from "../stores/friend";
 import { filterFutureDateTime, sortAscendingDateTime } from "../utils/formatDate";
@@ -28,10 +28,10 @@ let upcomingEvents = ref([]);
 // let pinnedTrails = ref<Array<Record<string, string>>>([]);
 let allTrails = ref<Array<Record<string, string>>>([]); // all of the user's trail TODO: use store to get this value
 
-async function getUpcomingEvents() {
+async function getUpcomingEvents(user: string) {
   let registeredEvents;
   try {
-    registeredEvents = await fetchy(`/api/events/registered`, "GET", { query: { user: props.user } });
+    registeredEvents = await fetchy(`/api/events/registered`, "GET", { query: { user } });
   } catch (_) {
     return;
   }
@@ -42,21 +42,27 @@ async function getUpcomingEvents() {
   console.log("upcoming events ", upcomingEvents);
 }
 
-async function getAllTrails() {
+async function getAllTrails(user: string) {
   let usersTrails;
   try {
-    usersTrails = await fetchy(`/api/trails/`, "GET", { query: { author: props.user, event: false } });
+    usersTrails = await fetchy(`/api/trails/`, "GET", { query: { author: user, event: false } });
   } catch (_) {
     return;
   }
   const filteredOutEvents = usersTrails.filter((t) => !t.event);
   allTrails.value = filteredOutEvents;
-  console.log("allTrails ", filteredOutEvents);
 }
 
 onBeforeMount(async () => {
-  await getUpcomingEvents();
-  await getAllTrails();
+  await getUpcomingEvents(props.user);
+  await getAllTrails(props.user);
+  loaded.value = true;
+});
+
+watchEffect(async () => {
+  loaded.value = false;
+  await getUpcomingEvents(props.user);
+  await getAllTrails(props.user);
   loaded.value = true;
 });
 
