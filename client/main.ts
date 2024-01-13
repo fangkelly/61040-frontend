@@ -5,7 +5,6 @@ import "purecss";
 
 import { createPinia } from "pinia";
 import piniaPluginPersistedState from "pinia-plugin-persistedstate";
-import { VDatePicker } from "vuetify/labs/VDatePicker";
 
 import { createApp } from "vue";
 
@@ -18,7 +17,7 @@ import * as directives from "vuetify/directives";
 import "vuetify/styles";
 
 const vuetify = createVuetify({
-  components: { ...components, VDatePicker },
+  components: { ...components },
   directives,
 });
 
