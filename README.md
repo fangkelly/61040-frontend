@@ -1,5 +1,5 @@
 # Note
-The deployment does not work. Please run the project locally.
+If the deployment does not work. Please run the project locally. Create a mongo cluster, copy the connection url, createa a `.env` file in the root directory and paste MONGO_SRV=<connection url> there.
 
 `npm run dev:server`
 
